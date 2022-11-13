@@ -1,0 +1,11 @@
+{
+  "Author": "X'pahtalo",
+  "Name": "Duty Tracker",
+  "Punchline": "Track some duty info.",
+  "Description": "Track some duty info. /dt open the menu",
+  "InternalName": "DutyTracker",
+  "ApplicableVersion": "any",
+  "Tags": [
+    
+  ]
+}
