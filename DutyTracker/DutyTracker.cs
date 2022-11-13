@@ -4,11 +4,12 @@ using Dalamud.Plugin;
 using System.IO;
 using System.Reflection;
 using Dalamud.Interface.Windowing;
+using DutyTracker.Duty_Events;
 using DutyTracker.Windows;
 
 namespace DutyTracker;
 
-public sealed class Plugin : IDalamudPlugin
+public sealed class DutyTracker : IDalamudPlugin
 {
     public        string Name => "DutyTracker";
     private const string CommandName = "/dt";
@@ -17,9 +18,12 @@ public sealed class Plugin : IDalamudPlugin
     private         CommandManager         CommandManager  { get; init; }
     public          Configuration          Configuration   { get; init; }
     public readonly WindowSystem           WindowSystem = new("DutyTracker");
+    public readonly DutyManager            DutyManager;
     public readonly DutyEventManager       DutyEventManager;
+    public readonly CombatEventCapture     CombatEventCapture;
+    
 
-    public Plugin(
+    public DutyTracker(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
         [RequiredVersion("1.0")] CommandManager         commandManager)
     {
@@ -29,9 +33,12 @@ public sealed class Plugin : IDalamudPlugin
         this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         this.Configuration.Initialize(this.PluginInterface);
 
-        DutyEventManager = PluginInterface.Create<DutyEventManager>();
+        DutyManager        = PluginInterface.Create<DutyManager>()!;
+        DutyEventManager   = PluginInterface.Create<DutyEventManager>(DutyManager)!;
+        CombatEventCapture = PluginInterface.Create<CombatEventCapture>(DutyManager)!;
         
-        WindowSystem.AddWindow(new MainWindow(this, DutyEventManager));
+        
+        WindowSystem.AddWindow(new MainWindow(this, DutyManager));
 
         this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
                                                     {
@@ -46,6 +53,7 @@ public sealed class Plugin : IDalamudPlugin
         this.WindowSystem.RemoveAllWindows();
         this.CommandManager.RemoveHandler(CommandName);
         DutyEventManager.Dispose();
+        CombatEventCapture.Dispose();
     }
 
     private void OnCommand(string command, string args)
