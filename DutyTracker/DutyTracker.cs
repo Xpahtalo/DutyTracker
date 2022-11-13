@@ -9,6 +9,8 @@ using DutyTracker.Windows;
 
 namespace DutyTracker;
 
+using DutyTracker_Configuration = Configuration;
+
 public sealed class DutyTracker : IDalamudPlugin
 {
     public        string Name => "DutyTracker";
@@ -33,19 +35,20 @@ public sealed class DutyTracker : IDalamudPlugin
         this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         this.Configuration.Initialize(this.PluginInterface);
 
-        DutyManager        = PluginInterface.Create<DutyManager>()!;
+        DutyManager        = PluginInterface.Create<DutyManager>(Configuration)!;
         DutyEventManager   = PluginInterface.Create<DutyEventManager>(DutyManager)!;
         CombatEventCapture = PluginInterface.Create<CombatEventCapture>(DutyManager)!;
         
         
-        WindowSystem.AddWindow(new MainWindow(this, DutyManager));
+        WindowSystem.AddWindow(new MainWindow(this, DutyManager, Configuration));
 
         this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
                                                     {
                                                         HelpMessage = "Open the Duty Tracker menu",
                                                     });
 
-        this.PluginInterface.UiBuilder.Draw += DrawUi;
+        this.PluginInterface.UiBuilder.Draw    += DrawUi;
+        PluginInterface.UiBuilder.OpenConfigUi += OpenSettings;
     }
 
     public void Dispose()
@@ -65,5 +68,10 @@ public sealed class DutyTracker : IDalamudPlugin
     private void DrawUi()
     {
         this.WindowSystem.Draw();
+    }
+
+    private void OpenSettings()
+    {
+        WindowSystem.GetWindow("Duty Tracker")!.IsOpen = true;
     }
 }

@@ -9,14 +9,15 @@ namespace DutyTracker.Windows;
 
 public sealed class MainWindow : Window, IDisposable
 {
-    private DutyTracker dutyTracker;
-    private DutyManager dutyManager;
+    private DutyTracker   dutyTracker;
+    private DutyManager   dutyManager;
+    private Configuration configuration;
 
     private static ImGuiTableFlags TableFlags = ImGuiTableFlags.BordersV | 
                                                 ImGuiTableFlags.BordersOuterH | 
                                                 ImGuiTableFlags.RowBg;
 
-    public MainWindow(DutyTracker dutyTracker, DutyManager dutyManager) : base(
+    public MainWindow(DutyTracker dutyTracker, DutyManager dutyManager, Configuration configuration) : base(
         "Duty Tracker", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
     {
         this.SizeConstraints = new WindowSizeConstraints
@@ -25,8 +26,9 @@ public sealed class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
         };
 
-        this.dutyTracker = dutyTracker;
-        this.dutyManager = dutyManager;
+        this.dutyTracker   = dutyTracker;
+        this.dutyManager   = dutyManager;
+        this.configuration = configuration;
     }
 
     public void Dispose()
@@ -106,6 +108,18 @@ public sealed class MainWindow : Window, IDisposable
     {
         if (!ImGui.BeginTabItem("Options"))
             return;
+
+        var includeDutyTrackerLabel = configuration.IncludeDutyTrackerLabel;
+        if (ImGui.Checkbox("Include [DutyTracker] label", ref includeDutyTrackerLabel))
+            configuration.IncludeDutyTrackerLabel = includeDutyTrackerLabel;
+        
+        var suppressEmptyValues = configuration.SuppressEmptyValues;
+        if (ImGui.Checkbox("Suppress values that are zero", ref suppressEmptyValues))
+            configuration.SuppressEmptyValues = suppressEmptyValues;
+        
+        if(ImGui.Button("Save"))
+            configuration.Save();
+        
         ImGui.EndTabItem();
     }
 }

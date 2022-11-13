@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
@@ -7,8 +8,6 @@ namespace DutyTracker.Duty_Events;
 
 public class DutyManager
 {
-    [PluginService][RequiredVersion("1.0")] public ChatGui ChatGui { get; set; }
-    
     /// <summary>
     /// The current <see cref="Duty"/> being tracked.
     /// </summary>
@@ -29,10 +28,17 @@ public class DutyManager
     /// </summary>
     public TimeSpan CurrentRunTime => DutyActive ? DateTime.Now - Duty.StartOfCurrentRun : Duty.EndOfDuty - Duty.StartOfCurrentRun;
 
-    public DutyManager()
+    private readonly Configuration configuration;
+    private readonly ChatGui       chatGui;
+
+    public DutyManager(
+        Configuration                    configuration,
+        [RequiredVersion("1.0")] ChatGui chatGui)
     {
-        Duty       = new Duty();
-        DutyActive = false;
+        this.configuration = configuration;
+        this.chatGui       = chatGui;
+        Duty               = new Duty();
+        DutyActive         = false;
     }
 
     /// <summary>
@@ -47,7 +53,7 @@ public class DutyManager
 
         DutyActive = true;
     }
-    
+
     /// <summary>
     /// Ends the current duty.
     /// </summary>
@@ -55,11 +61,16 @@ public class DutyManager
     {
         Duty.EndDuty();
         DutyActive = false;
-        
-        ChatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyTime:m\\:ss}"));
-        ChatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunTime:m\\:ss}"));
-        ChatGui.Print(InfoMessage("Deaths: ",       $"{Duty.DeathEvents.Count}"));
-        ChatGui.Print(InfoMessage("Wipes: ",        $"{Duty.WipeEvents.Count}"));
+
+        chatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyTime:m\\:ss}"));
+        if (Duty.WipeEvents.Count > 0 || !configuration.SuppressEmptyValues)
+        {
+            chatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunTime:m\\:ss}"));
+            chatGui.Print(InfoMessage("Wipes: ",              $"{Duty.WipeEvents.Count}"));
+        }
+
+        if (Duty.DeathEvents.Count > 0 || !configuration.SuppressEmptyValues)
+            chatGui.Print(InfoMessage("Deaths: ", $"{Duty.DeathEvents.Count}"));
     }
 
     /// <summary>
@@ -86,19 +97,24 @@ public class DutyManager
     {
         Duty.StartNewRun();
     }
-    
-    private static SeString InfoMessage(string label, string info)
+
+    private SeString InfoMessage(string label, string info)
     {
-        return new SeStringBuilder()
-              .AddUiForeground("[DutyTracker] ", 35)
-              .AddUiForegroundOff()
-               
-              .AddUiForeground(label, 62)
-              .AddUiForegroundOff()
-               
-              .AddUiForeground(info, 45)
-              .AddUiForegroundOff()
-               
-              .Build();
+        var seStringBuilder = new SeStringBuilder();
+
+        if (configuration.IncludeDutyTrackerLabel)
+        {
+            seStringBuilder.AddUiForeground("[DutyTracker] ", 35)
+                           .AddUiForegroundOff();
+
+        }
+
+        seStringBuilder.AddUiForeground(label, 62)
+                       .AddUiForegroundOff()
+
+                       .AddUiForeground(info, 45)
+                       .AddUiForegroundOff();
+
+        return seStringBuilder.Build();
     }
 }
