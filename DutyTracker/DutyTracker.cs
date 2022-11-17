@@ -1,8 +1,6 @@
 ﻿using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
-using System.IO;
-using System.Reflection;
 using Dalamud.Interface.Windowing;
 using DutyTracker.Duty_Events;
 using DutyTracker.Windows;
@@ -40,7 +38,7 @@ public sealed class DutyTracker : IDalamudPlugin
         CombatEventCapture = PluginInterface.Create<CombatEventCapture>(DutyManager)!;
         
         
-        WindowSystem.AddWindow(new MainWindow(this, DutyManager, Configuration));
+        WindowSystem.AddWindow(new MainWindow(DutyManager, Configuration));
 
         this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
                                                     {

@@ -4,13 +4,11 @@ using Dalamud.Interface.Windowing;
 using DutyTracker.Duty_Events;
 using DutyTracker.Formatting;
 using ImGuiNET;
-using ImGuiScene;
 
 namespace DutyTracker.Windows;
 
 public sealed class MainWindow : Window, IDisposable
 {
-    private DutyTracker   dutyTracker;
     private DutyManager   dutyManager;
     private Configuration configuration;
 
@@ -18,8 +16,8 @@ public sealed class MainWindow : Window, IDisposable
                                                 ImGuiTableFlags.BordersOuterH | 
                                                 ImGuiTableFlags.RowBg;
 
-    public MainWindow(DutyTracker dutyTracker, DutyManager dutyManager, Configuration configuration) : base(
-        "Duty Tracker", ImGuiWindowFlags.None)
+    public MainWindow(DutyManager dutyManager, Configuration configuration) : base(
+        "Duty Tracker")
     {
         this.SizeConstraints = new WindowSizeConstraints
         {
@@ -27,7 +25,6 @@ public sealed class MainWindow : Window, IDisposable
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
         };
 
-        this.dutyTracker   = dutyTracker;
         this.dutyManager   = dutyManager;
         this.configuration = configuration;
     }

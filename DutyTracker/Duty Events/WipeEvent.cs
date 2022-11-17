@@ -10,10 +10,10 @@ public class WipeEvent
     /// <summary>
     /// The timestamp of the wipe.
     /// </summary>
-    public DateTime TimeOfWipe { get; set; }
+    public DateTime TimeOfWipe { get; init; }
 
     /// <summary>
     /// How long the run lasted.
     /// </summary>
-    public TimeSpan Duration { get; set; }
+    public TimeSpan Duration { get; init; }
 }

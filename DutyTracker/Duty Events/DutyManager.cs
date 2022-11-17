@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.CompilerServices;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;

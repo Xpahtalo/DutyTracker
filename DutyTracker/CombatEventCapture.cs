@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.SubKinds;
-using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.ClientState.Party;
 using Dalamud.Hooking;
 using Dalamud.IoC;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using DutyTracker.Duty_Events;
-using Lumina.Excel.GeneratedSheets;
-using Action = Lumina.Excel.GeneratedSheets.Action;
 
 namespace DutyTracker;
 
@@ -20,9 +15,9 @@ namespace DutyTracker;
 
 public class CombatEventCapture : IDisposable
 {
-    private readonly ObjectTable ObjectTable;
-    private readonly PartyList   PartyList;
-    private readonly DutyManager DutyManager;
+    private readonly ObjectTable objectTable;
+    private readonly PartyList   partyList;
+    private readonly DutyManager dutyManager;
 
     private delegate void ReceiveActorControlSelfDelegate(
         uint entityId, uint id, uint arg0, uint arg1, uint arg2, uint arg3, uint arg4, uint arg5,
@@ -62,9 +57,9 @@ public class CombatEventCapture : IDisposable
         [RequiredVersion("1.0")] PartyList   partyList,
         DutyManager                          dutyManager)
     {
-        ObjectTable = objectTable;
-        PartyList   = partyList;
-        DutyManager = dutyManager;
+        this.objectTable = objectTable;
+        this.partyList   = partyList;
+        this.dutyManager = dutyManager;
 
         SignatureHelper.Initialise(this);
 
@@ -75,10 +70,10 @@ public class CombatEventCapture : IDisposable
 
     private bool LookupPartyMember(uint actorId)
     {
-        var count = PartyList.IsAlliance ? 8 : 32;
+        var count = partyList.IsAlliance ? 8 : 32;
 
         for (var i = 0; i < count; i++)
-            if (PartyList[i]?.ObjectId is { } id)
+            if (partyList[i]?.ObjectId is { } id)
                 if (actorId == id)
                     return true;
 
@@ -87,7 +82,7 @@ public class CombatEventCapture : IDisposable
 
     public bool ShouldCapture(uint actorId)
     {
-        return actorId == ObjectTable[0]?.ObjectId || LookupPartyMember(actorId);
+        return actorId == objectTable[0]?.ObjectId || LookupPartyMember(actorId);
     }
 
     private void ReceiveActorControlSelfDetour(
@@ -109,17 +104,12 @@ public class CombatEventCapture : IDisposable
             if (!ShouldCapture(entityId))
                 return;
 
-            if (ObjectTable.SearchById(entityId) is not PlayerCharacter p)
+            if (objectTable.SearchById(entityId) is not PlayerCharacter p)
                 return;
             if (type == ActorControlDeathCode)
             {
                 PluginLog.Debug("Death Event detected.");
-                DutyManager.AddDeathEvent(new DeathEvent
-                                          {
-                                              PlayerId    = entityId,
-                                              PlayerName  = p.Name.TextValue,
-                                              TimeOfDeath = DateTime.Now,
-                                          });
+                dutyManager.AddDeathEvent(new DeathEvent(entityId, p.Name.TextValue, DateTime.Now));
             }
         }
         catch (Exception e)
