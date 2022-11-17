@@ -24,13 +24,9 @@ public class CombatEventCapture : IDisposable
     private readonly PartyList   PartyList;
     private readonly DutyManager DutyManager;
 
-    private delegate void ReceiveAbilityDelegate(int sourceId, IntPtr sourceCharacter, IntPtr pos, IntPtr effectHeader, IntPtr effectArray, IntPtr effectTrail);
-
     private delegate void ReceiveActorControlSelfDelegate(
         uint entityId, uint id, uint arg0, uint arg1, uint arg2, uint arg3, uint arg4, uint arg5,
         ulong targetId, byte a10);
-
-    private delegate void ActionIntegrityDelegate(uint targetId, IntPtr actionIntegrityData, bool isReplay);
 
     // ffxiv_dx11.exe+6C3ED9 - E8 526B0600           - call ffxiv_dx11.exe+72AA30
     // ffxiv_dx11.exe+6C3EDE - 0FB7 0B               - movzx ecx,word ptr [rbx]
