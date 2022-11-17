@@ -77,11 +77,15 @@ public class CombatEventCapture : IDisposable
         PluginLog.Debug("CombatEventCapture initialized.");
     }
 
-    private bool LookupPartyMember(uint actorId) {
-        for (var i = 0; i < 8; i++)
+    private bool LookupPartyMember(uint actorId)
+    {
+        var count = PartyList.IsAlliance ? 8 : 32;
+
+        for (var i = 0; i < count; i++)
             if (PartyList[i]?.ObjectId is { } id)
                 if (actorId == id)
                     return true;
+
         return false;
     }
 

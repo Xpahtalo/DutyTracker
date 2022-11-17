@@ -2,6 +2,7 @@
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using DutyTracker.Duty_Events;
+using DutyTracker.Formatting;
 using ImGuiNET;
 using ImGuiScene;
 
@@ -18,7 +19,7 @@ public sealed class MainWindow : Window, IDisposable
                                                 ImGuiTableFlags.RowBg;
 
     public MainWindow(DutyTracker dutyTracker, DutyManager dutyManager, Configuration configuration) : base(
-        "Duty Tracker", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse)
+        "Duty Tracker", ImGuiWindowFlags.None)
     {
         this.SizeConstraints = new WindowSizeConstraints
         {
@@ -50,11 +51,11 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTabItem("Status"))
             return;
 
-        ImGui.Text($"Start Time: {dutyManager.Duty.StartOfDuty}");
-        ImGui.Text($"Start of Current Run: {dutyManager.Duty.StartOfCurrentRun}");
-        ImGui.Text($"End Time: {dutyManager.Duty.EndOfDuty}");
-        ImGui.Text($"Elapsed Time: {dutyManager.TotalDutyTime:m\\:ss}");
-        ImGui.Text($"Current Run Time: {dutyManager.CurrentRunTime:m\\:ss}");
+        ImGui.Text($"Start Time: {dutyManager.Duty.StartOfDuty:hh\\:mm\\:ss tt}");
+        ImGui.Text($"Start of Current Run: {dutyManager.Duty.StartOfCurrentRun:hh\\:mm\\:ss tt}");
+        ImGui.Text($"End Time: {dutyManager.Duty.EndOfDuty:hh\\:mm\\:ss tt}");
+        ImGui.Text($"Elapsed Time: {TimeFormat.MinutesAndSeconds(dutyManager.TotalDutyTime)}");
+        ImGui.Text($"Current Run Time: {TimeFormat.MinutesAndSeconds(dutyManager.CurrentRunTime)}");
         ImGui.Text($"Duty Status: {dutyManager.DutyActive}");
         ImGui.Text($"Deaths: {dutyManager.Duty.DeathEvents.Count}");
         ImGui.Text($"Wipes: {dutyManager.Duty.WipeEvents.Count}");
@@ -73,7 +74,7 @@ public sealed class MainWindow : Window, IDisposable
                     ImGui.TableSetColumnIndex(0);
                     ImGui.TextUnformatted($"{deathEvent.PlayerName}");
                     ImGui.TableSetColumnIndex(1);
-                    ImGui.TextUnformatted($"{deathEvent.TimeOfDeath}");
+                    ImGui.TextUnformatted($"{deathEvent.TimeOfDeath:hh\\:mm\\:ss tt}");
                 }
             }
             ImGui.EndTable();
@@ -92,9 +93,9 @@ public sealed class MainWindow : Window, IDisposable
                 {
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
-                    ImGui.TextUnformatted($"{wipeEvent.Duration:m\\:ss}");
+                    ImGui.TextUnformatted($"{TimeFormat.MinutesAndSeconds(wipeEvent.Duration)}");
                     ImGui.TableSetColumnIndex(1);
-                    ImGui.TextUnformatted($"{wipeEvent.TimeOfWipe}");
+                    ImGui.TextUnformatted($"{wipeEvent.TimeOfWipe:hh\\:mm\\:ss tt}");
                 }
             }
             ImGui.EndTable();

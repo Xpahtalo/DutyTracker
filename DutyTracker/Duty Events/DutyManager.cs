@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
+using DutyTracker.Formatting;
 
 namespace DutyTracker.Duty_Events;
 
@@ -62,10 +63,10 @@ public class DutyManager
         Duty.EndDuty();
         DutyActive = false;
 
-        chatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyTime:m\\:ss}"));
+        chatGui.Print(InfoMessage("Time in Duty: ", $"{TimeFormat.MinutesAndSeconds(TotalDutyTime)}"));
         if (Duty.WipeEvents.Count > 0 || !configuration.SuppressEmptyValues)
         {
-            chatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunTime:m\\:ss}"));
+            chatGui.Print(InfoMessage("Final Run Duration: ", $"{TimeFormat.MinutesAndSeconds(CurrentRunTime)}"));
             chatGui.Print(InfoMessage("Wipes: ",              $"{Duty.WipeEvents.Count}"));
         }
 
@@ -104,16 +105,11 @@ public class DutyManager
 
         if (configuration.IncludeDutyTrackerLabel)
         {
-            seStringBuilder.AddUiForeground("[DutyTracker] ", 35)
-                           .AddUiForegroundOff();
-
+            seStringBuilder.AddUiForeground("[DutyTracker] ", 35).AddUiForegroundOff();
         }
 
-        seStringBuilder.AddUiForeground(label, 62)
-                       .AddUiForegroundOff()
-
-                       .AddUiForeground(info, 45)
-                       .AddUiForegroundOff();
+        seStringBuilder.AddUiForeground(label, 62).AddUiForegroundOff()
+                       .AddUiForeground(info, 45).AddUiForegroundOff();
 
         return seStringBuilder.Build();
     }
