@@ -10,7 +10,7 @@ namespace DutyTracker.Duty_Events;
 public class Duty
 {
     /// <summary>
-    /// List of all deaths that occured during this instance.
+    /// List of all party deaths that occured during this instance.
     /// </summary>
     public List<DeathEvent> DeathEvents { get; private set; }
 

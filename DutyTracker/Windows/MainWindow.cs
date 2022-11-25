@@ -2,7 +2,7 @@
 using System.Numerics;
 using Dalamud.Interface.Windowing;
 using DutyTracker.Duty_Events;
-using DutyTracker.Formatting;
+using DutyTracker.Extensions;
 using ImGuiNET;
 
 namespace DutyTracker.Windows;
@@ -37,13 +37,14 @@ public sealed class MainWindow : Window, IDisposable
     {
         if(ImGui.BeginTabBar("MainWindowTabBar"))
         {
-            DisplayStatus();
-            DisplayOptions();
+            DisplayStatusTab();
+            DisplayOptionsTab();
+            DisplayInfoTab();
         }
         ImGui.EndTabBar();
     }
 
-    private void DisplayStatus()
+    private void DisplayStatusTab()
     {
         if (!ImGui.BeginTabItem("Status"))
             return;
@@ -51,10 +52,10 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.Text($"Start Time: {dutyManager.Duty.StartOfDuty:hh\\:mm\\:ss tt}");
         ImGui.Text($"Start of Current Run: {dutyManager.Duty.StartOfCurrentRun:hh\\:mm\\:ss tt}");
         ImGui.Text($"End Time: {dutyManager.Duty.EndOfDuty:hh\\:mm\\:ss tt}");
-        ImGui.Text($"Elapsed Time: {TimeFormat.MinutesAndSeconds(dutyManager.TotalDutyTime)}");
-        ImGui.Text($"Current Run Time: {TimeFormat.MinutesAndSeconds(dutyManager.CurrentRunTime)}");
+        ImGui.Text($"Elapsed Time: {dutyManager.TotalDutyTime.MinutesAndSeconds()}");
+        ImGui.Text($"Current Run Time: {dutyManager.CurrentRunTime.MinutesAndSeconds()}");
         ImGui.Text($"Duty Status: {dutyManager.DutyActive}");
-        ImGui.Text($"Deaths: {dutyManager.Duty.DeathEvents.Count}");
+        ImGui.Text($"Party Deaths: {dutyManager.Duty.DeathEvents.Count}");
         ImGui.Text($"Wipes: {dutyManager.Duty.WipeEvents.Count}");
         
         if (dutyManager.Duty.DeathEvents.Count > 0)
@@ -90,7 +91,7 @@ public sealed class MainWindow : Window, IDisposable
                 {
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
-                    ImGui.TextUnformatted($"{TimeFormat.MinutesAndSeconds(wipeEvent.Duration)}");
+                    ImGui.TextUnformatted($"{wipeEvent.Duration.MinutesAndSeconds()}");
                     ImGui.TableSetColumnIndex(1);
                     ImGui.TextUnformatted($"{wipeEvent.TimeOfWipe:hh\\:mm\\:ss tt}");
                 }
@@ -102,7 +103,7 @@ public sealed class MainWindow : Window, IDisposable
         ImGui.EndTabItem();
     }
 
-    private void DisplayOptions()
+    private void DisplayOptionsTab()
     {
         if (!ImGui.BeginTabItem("Options"))
             return;
@@ -117,6 +118,17 @@ public sealed class MainWindow : Window, IDisposable
         
         if(ImGui.Button("Save"))
             configuration.Save();
+        
+        ImGui.EndTabItem();
+    }
+
+    private void DisplayInfoTab()
+    {
+        if (!ImGui.BeginTabItem("Info"))
+            return;
+        
+        ImGui.TextWrapped("Currently, only the deaths of party members are tracked. This means that deaths that occur in other alliances will not be shown.");
+        ImGui.TextWrapped("Party members must also be loaded in order to be tracked, which should handle almost all cases, but there may be some that are out of my control.");
         
         ImGui.EndTabItem();
     }

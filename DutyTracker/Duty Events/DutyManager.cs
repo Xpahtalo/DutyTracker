@@ -2,7 +2,7 @@
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
-using DutyTracker.Formatting;
+using DutyTracker.Extensions;
 
 namespace DutyTracker.Duty_Events;
 
@@ -62,15 +62,15 @@ public class DutyManager
         Duty.EndDuty();
         DutyActive = false;
 
-        chatGui.Print(InfoMessage("Time in Duty: ", $"{TimeFormat.MinutesAndSeconds(TotalDutyTime)}"));
+        chatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyTime.MinutesAndSeconds()}"));
         if (Duty.WipeEvents.Count > 0 || !configuration.SuppressEmptyValues)
         {
-            chatGui.Print(InfoMessage("Final Run Duration: ", $"{TimeFormat.MinutesAndSeconds(CurrentRunTime)}"));
+            chatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunTime.MinutesAndSeconds()}"));
             chatGui.Print(InfoMessage("Wipes: ",              $"{Duty.WipeEvents.Count}"));
         }
 
         if (Duty.DeathEvents.Count > 0 || !configuration.SuppressEmptyValues)
-            chatGui.Print(InfoMessage("Deaths: ", $"{Duty.DeathEvents.Count}"));
+            chatGui.Print(InfoMessage("Party Deaths: ", $"{Duty.DeathEvents.Count}"));
     }
 
     /// <summary>
