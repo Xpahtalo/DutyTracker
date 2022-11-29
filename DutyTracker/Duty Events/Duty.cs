@@ -22,7 +22,7 @@ public class Duty
     /// <summary>
     /// The timestamp of the initial start of the instance.
     /// </summary>
-    public DateTime StartOfDuty { get; set; }
+    public DateTime StartOfDuty { get; init; }
 
     /// <summary>
     /// The timestamp of the start of the most recent attempt after a wipe. Matches <see cref="StartOfDuty"/> if there

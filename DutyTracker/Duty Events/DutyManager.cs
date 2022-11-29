@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.IoC;
@@ -18,15 +19,20 @@ public class DutyManager
     /// </summary>
     public bool DutyActive { get; set; }
 
+    public bool AnyDutiesStarted { get; set; }
+
     /// <summary>
     /// How elapsed time so far of the current duty, or how long it lasted if it is now over.
     /// </summary>
-    public TimeSpan TotalDutyTime => DutyActive ? DateTime.Now - Duty.StartOfDuty : Duty.EndOfDuty - Duty.StartOfDuty;
+    public TimeSpan TotalDutyDuration => DutyActive ? DateTime.Now - Duty.StartOfDuty : Duty.EndOfDuty - Duty.StartOfDuty;
 
     /// <summary>
     /// The elapsed time so far of the current run, or how long the last run was if the duty is now over.
     /// </summary>
-    public TimeSpan CurrentRunTime => DutyActive ? DateTime.Now - Duty.StartOfCurrentRun : Duty.EndOfDuty - Duty.StartOfCurrentRun;
+    public TimeSpan CurrentRunDuration => DutyActive ? DateTime.Now - Duty.StartOfCurrentRun : Duty.EndOfDuty - Duty.StartOfCurrentRun;
+    
+    public TimeSpan FinalRunDuration => (Duty.WipeEvents.Count == 0) ? Duty.EndOfDuty - Duty.StartOfDuty : Duty.WipeEvents[^1].Duration;
+
 
     private readonly Configuration configuration;
     private readonly ChatGui       chatGui;
@@ -39,6 +45,7 @@ public class DutyManager
         this.chatGui       = chatGui;
         Duty               = new Duty();
         DutyActive         = false;
+        AnyDutiesStarted   = false;
     }
 
     /// <summary>
@@ -51,7 +58,8 @@ public class DutyManager
                    StartOfDuty = DateTime.Now,
                };
 
-        DutyActive = true;
+        DutyActive       = true;
+        AnyDutiesStarted = true;
     }
 
     /// <summary>
@@ -60,12 +68,12 @@ public class DutyManager
     public void EndDuty()
     {
         Duty.EndDuty();
-        DutyActive = false;
+        DutyActive  = false;
 
-        chatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyTime.MinutesAndSeconds()}"));
+        chatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyDuration.MinutesAndSeconds()}"));
         if (Duty.WipeEvents.Count > 0 || !configuration.SuppressEmptyValues)
         {
-            chatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunTime.MinutesAndSeconds()}"));
+            chatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunDuration.MinutesAndSeconds()}"));
             chatGui.Print(InfoMessage("Wipes: ",              $"{Duty.WipeEvents.Count}"));
         }
 

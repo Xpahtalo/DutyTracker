@@ -7,7 +7,14 @@ internal static class TimeSpanExtensions
 {
     public static string MinutesAndSeconds(this TimeSpan timeSpan)
     {
-        return $"{Math.Floor(timeSpan.TotalMinutes)}:{timeSpan.Seconds}";
+        var stringBuilder = new StringBuilder();
+        stringBuilder.Append(timeSpan.Minutes);
+        stringBuilder.Append(':');
+        if (timeSpan.Seconds < 10)
+            stringBuilder.Append('0');
+        stringBuilder.Append(timeSpan.Seconds);
+        
+        return stringBuilder.ToString();
     }
 
     public static string HoursMinutesAndSeconds(this TimeSpan timeSpan)
@@ -21,6 +28,8 @@ internal static class TimeSpanExtensions
 
         stringBuilder.Append(timeSpan.Minutes);
         stringBuilder.Append(':');
+        if (timeSpan.Seconds < 10)
+            stringBuilder.Append('0');
         stringBuilder.Append(timeSpan.Seconds);
         
         return stringBuilder.ToString();

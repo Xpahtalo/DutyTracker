@@ -49,15 +49,26 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTabItem("Status"))
             return;
 
+        if (!dutyManager.AnyDutiesStarted)
+        {
+                // This only happens if no duties have been started since the plugin loaded.
+                ImGui.Text("No duties");
+                ImGui.EndTabItem();
+                return;
+        }
+
         ImGui.Text($"Start Time: {dutyManager.Duty.StartOfDuty:hh\\:mm\\:ss tt}");
         ImGui.Text($"Start of Current Run: {dutyManager.Duty.StartOfCurrentRun:hh\\:mm\\:ss tt}");
         ImGui.Text($"End Time: {dutyManager.Duty.EndOfDuty:hh\\:mm\\:ss tt}");
-        ImGui.Text($"Elapsed Time: {dutyManager.TotalDutyTime.MinutesAndSeconds()}");
-        ImGui.Text($"Current Run Time: {dutyManager.CurrentRunTime.MinutesAndSeconds()}");
-        ImGui.Text($"Duty Status: {dutyManager.DutyActive}");
+        ImGui.Text($"Elapsed Time: {dutyManager.TotalDutyDuration.MinutesAndSeconds()}");
+        if (dutyManager.DutyActive)
+            ImGui.Text($"Current Run Time: {dutyManager.CurrentRunDuration.MinutesAndSeconds()}");
+        else
+            ImGui.Text($"Final Run Time: {dutyManager.FinalRunDuration.MinutesAndSeconds()}");
+        ImGui.Text($"In Duty: {dutyManager.DutyActive}");
         ImGui.Text($"Party Deaths: {dutyManager.Duty.DeathEvents.Count}");
         ImGui.Text($"Wipes: {dutyManager.Duty.WipeEvents.Count}");
-        
+
         if (dutyManager.Duty.DeathEvents.Count > 0)
         {
             if (ImGui.BeginTable("deaths", 2, TableFlags))
@@ -65,7 +76,7 @@ public sealed class MainWindow : Window, IDisposable
                 ImGui.TableSetupColumn("Player Name");
                 ImGui.TableSetupColumn("Time of Death");
                 ImGui.TableHeadersRow();
-                
+
                 foreach (var deathEvent in dutyManager.Duty.DeathEvents)
                 {
                     ImGui.TableNextRow();
@@ -75,6 +86,7 @@ public sealed class MainWindow : Window, IDisposable
                     ImGui.TextUnformatted($"{deathEvent.TimeOfDeath:hh\\:mm\\:ss tt}");
                 }
             }
+
             ImGui.EndTable();
         }
 
@@ -96,9 +108,11 @@ public sealed class MainWindow : Window, IDisposable
                     ImGui.TextUnformatted($"{wipeEvent.TimeOfWipe:hh\\:mm\\:ss tt}");
                 }
             }
+
             ImGui.EndTable();
         }
-        
+
+
 
         ImGui.EndTabItem();
     }
