@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Linq;
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.IoC;
 using DutyTracker.Extensions;
 
 namespace DutyTracker.Duty_Events;
@@ -35,14 +32,11 @@ public class DutyManager
 
 
     private readonly Configuration configuration;
-    private readonly ChatGui       chatGui;
 
     public DutyManager(
-        Configuration                    configuration,
-        [RequiredVersion("1.0")] ChatGui chatGui)
+        Configuration configuration)
     {
         this.configuration = configuration;
-        this.chatGui       = chatGui;
         Duty               = new Duty();
         DutyActive         = false;
         AnyDutiesStarted   = false;
@@ -70,15 +64,15 @@ public class DutyManager
         Duty.EndDuty();
         DutyActive  = false;
 
-        chatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyDuration.MinutesAndSeconds()}"));
+        Service.ChatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyDuration.MinutesAndSeconds()}"));
         if (Duty.WipeEvents.Count > 0 || !configuration.SuppressEmptyValues)
         {
-            chatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunDuration.MinutesAndSeconds()}"));
-            chatGui.Print(InfoMessage("Wipes: ",              $"{Duty.WipeEvents.Count}"));
+            Service.ChatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunDuration.MinutesAndSeconds()}"));
+            Service.ChatGui.Print(InfoMessage("Wipes: ",              $"{Duty.WipeEvents.Count}"));
         }
 
         if (Duty.DeathEvents.Count > 0 || !configuration.SuppressEmptyValues)
-            chatGui.Print(InfoMessage("Party Deaths: ", $"{Duty.DeathEvents.Count}"));
+            Service.ChatGui.Print(InfoMessage("Party Deaths: ", $"{Duty.DeathEvents.Count}"));
     }
 
     /// <summary>

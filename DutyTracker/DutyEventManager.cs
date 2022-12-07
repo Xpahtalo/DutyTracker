@@ -27,23 +27,12 @@ public unsafe class DutyEventManager : IDisposable
     [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B D9 49 8B F8 41 0F B7 08", DetourName = nameof(DutyEventFunction))]
     private readonly Hook<DutyEventDelegate>? DutyEventHook = null;
 
-    private readonly Condition   condition;
-    private readonly Framework   framework;
-    private readonly ClientState clientState;
-
     public           bool        DutyStarted { get; private set; }
     private          bool        completedThisTerritory;
     private readonly DutyManager dutyManager;
 
-    public DutyEventManager(
-        [RequiredVersion("1.0")] Condition   condition,
-        [RequiredVersion("1.0")] Framework   framework,
-        [RequiredVersion("1.0")] ClientState clientState,
-        DutyManager                          dutyManager)
+    public DutyEventManager(DutyManager dutyManager)
     {
-        this.condition   = condition;
-        this.framework   = framework;
-        this.clientState = clientState;
         this.dutyManager = dutyManager;
         SignatureHelper.Initialise(this);
 
@@ -54,8 +43,8 @@ public unsafe class DutyEventManager : IDisposable
             StartDuty();
         }
 
-        this.framework!.Update             += FrameworkUpdate;
-        this.clientState!.TerritoryChanged += TerritoryChanged;
+        Service.Framework.Update             += FrameworkUpdate;
+        Service.ClientState.TerritoryChanged += TerritoryChanged;
 
         PluginLog.Debug("DutyEventManager initialized");
     }
@@ -64,15 +53,15 @@ public unsafe class DutyEventManager : IDisposable
     {
         DutyEventHook?.Dispose();
 
-        framework.Update             -= FrameworkUpdate;
-        clientState.TerritoryChanged -= TerritoryChanged;
+        Service.Framework.Update             -= FrameworkUpdate;
+        Service.ClientState.TerritoryChanged -= TerritoryChanged;
     }
 
     private void FrameworkUpdate(Framework framework)
     {
         if (!DutyStarted && !completedThisTerritory)
         {
-            if (IsBoundByDuty() && condition[ConditionFlag.InCombat])
+            if (IsBoundByDuty() && Service.Condition[ConditionFlag.InCombat])
             {
                 PluginLog.Debug("Start Duty | FrameworkUpdate");
                 StartDuty();
@@ -158,9 +147,9 @@ public unsafe class DutyEventManager : IDisposable
 
     private bool IsBoundByDuty()
     {
-        var baseBoundByDuty = condition[ConditionFlag.BoundByDuty];
-        var boundBy56       = condition[ConditionFlag.BoundByDuty56];
-        var boundBy95       = condition[ConditionFlag.BoundByDuty95];
+        var baseBoundByDuty = Service.Condition[ConditionFlag.BoundByDuty];
+        var boundBy56       = Service.Condition[ConditionFlag.BoundByDuty56];
+        var boundBy95       = Service.Condition[ConditionFlag.BoundByDuty95];
 
         return baseBoundByDuty || boundBy56 || boundBy95;
     }
