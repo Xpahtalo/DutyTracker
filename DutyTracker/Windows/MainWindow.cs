@@ -13,10 +13,6 @@ public sealed class MainWindow : Window, IDisposable
     private Configuration configuration;
     private WindowSystem  windowSystem;
 
-    private static ImGuiTableFlags TableFlags = ImGuiTableFlags.BordersV | 
-                                                ImGuiTableFlags.BordersOuterH | 
-                                                ImGuiTableFlags.RowBg;
-
     public MainWindow(DutyManager dutyManager, Configuration configuration, WindowSystem windowSystem) : base(
         "Duty Tracker")
     {

@@ -23,7 +23,7 @@ public class DutyManager
         DutyActive         = false;
         Duties             = new List<Duty>();
         currentDuty        = new Duty();
-        
+        currentRun         = new Run();
     }
 
     public void StartDuty()

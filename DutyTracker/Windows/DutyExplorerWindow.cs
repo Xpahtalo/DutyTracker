@@ -17,6 +17,10 @@ public class DutyExplorerWindow : Window, IDisposable
     private Duty?         selectedDuty;
     private Run?          selectedRun;
 
+    private static ImGuiTableFlags TableFlags = ImGuiTableFlags.BordersV      |
+                                                ImGuiTableFlags.BordersOuterH |
+                                                ImGuiTableFlags.RowBg;
+
     public DutyExplorerWindow(DutyManager dutyManager, Configuration configuration)
         : base("Duty Explorer")
     {
@@ -37,11 +41,11 @@ public class DutyExplorerWindow : Window, IDisposable
     {
         var availableRegion = ImGui.GetContentRegionAvail();
         
-        DrawDutyList(new Vector2(availableRegion.X / 3f, 0));
+        DrawDutyList(new Vector2(availableRegion.X * 0.25f, 0));
         ImGui.SameLine();
-        DrawRunList(new Vector2(availableRegion.X / 3f, 0), selectedDuty);
+        DrawRunList(new Vector2(availableRegion.X * 0.25f, 0), selectedDuty);
         ImGui.SameLine();
-        DrawRunInfo(new Vector2(availableRegion.X / 3f, 0), selectedRun);
+        DrawRunInfo(new Vector2(availableRegion.X * 0.49f, 0), selectedRun);
     }
 
     private void DrawDutyList(Vector2 size)
@@ -55,7 +59,7 @@ public class DutyExplorerWindow : Window, IDisposable
                 {
                     foreach (var duty in dutyManager.Duties)
                     {
-                        if (ImGui.Selectable($"{Service.DataManager.Excel.GetSheet<TerritoryType>().GetRow(duty.TerritoryType).PlaceName.Value.Name}##{index}", selectedDuty == duty))
+                        if (ImGui.Selectable($"{Service.DataManager.Excel.GetSheet<TerritoryType>()!.GetRow(duty.TerritoryType)!.PlaceName.Value!.Name}##{index}", selectedDuty == duty))
                         {
                             selectedDuty = selectedDuty == duty ? null : duty;
                             selectedRun  = null;
@@ -120,6 +124,28 @@ public class DutyExplorerWindow : Window, IDisposable
                 ImGui.Text($"Run End Time:   {run.EndTime:hh\\:mm\\:ss tt}");
                 ImGui.Text($"Run Duration:   {(run.EndTime - run.StartTime).HoursMinutesAndSeconds()}");
                 ImGui.Text($"Deaths: {run.DeathList.Count}");
+                
+                if (run.DeathList.Count > 0)
+                {
+                    if (ImGui.BeginTable("deaths", 2, TableFlags))
+                    {
+                        ImGui.TableSetupColumn("Player Name");
+                        ImGui.TableSetupColumn("Time of Death");
+                        ImGui.TableHeadersRow();
+                
+
+                        foreach (var death in run.DeathList)
+                        {
+                            ImGui.TableNextRow();
+                            ImGui.TableSetColumnIndex(0);
+                            ImGui.TextUnformatted($"{death.PlayerName}");
+                            ImGui.TableSetColumnIndex(1);
+                            ImGui.TextUnformatted($"{death.TimeOfDeath:hh\\:mm\\:ss tt}");
+                        }
+                    }
+
+                    ImGui.EndTable();
+                }
             }
             else
             {
