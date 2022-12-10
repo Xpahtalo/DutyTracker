@@ -60,7 +60,7 @@ public class DutyManager
         var totalDeaths = currentDuty.TotalDeaths;
         
         if (totalDeaths > 0 || !configuration.SuppressEmptyValues)
-            Service.ChatGui.Print(InfoMessage("Party DeathList: ", $"{totalDeaths}"));
+            Service.ChatGui.Print(InfoMessage("Party Deaths: ", $"{totalDeaths}"));
     }
 
     public void AddDeath(Death death)
