@@ -30,6 +30,8 @@ public sealed class DutyTracker : IDalamudPlugin
         this.PluginInterface = pluginInterface;
         this.CommandManager  = commandManager;
 
+        PluginInterface.Create<Service>();
+        
         this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         this.Configuration.Initialize(this.PluginInterface);
 
@@ -38,7 +40,8 @@ public sealed class DutyTracker : IDalamudPlugin
         CombatEventCapture = PluginInterface.Create<CombatEventCapture>(DutyManager)!;
         
         
-        WindowSystem.AddWindow(new MainWindow(DutyManager, Configuration));
+        WindowSystem.AddWindow(new MainWindow(DutyManager, Configuration, WindowSystem));
+        WindowSystem.AddWindow(new DutyExplorerWindow(DutyManager, Configuration));
 
         this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
                                                     {

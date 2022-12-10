@@ -11,12 +11,13 @@ public sealed class MainWindow : Window, IDisposable
 {
     private DutyManager   dutyManager;
     private Configuration configuration;
+    private WindowSystem  windowSystem;
 
     private static ImGuiTableFlags TableFlags = ImGuiTableFlags.BordersV | 
                                                 ImGuiTableFlags.BordersOuterH | 
                                                 ImGuiTableFlags.RowBg;
 
-    public MainWindow(DutyManager dutyManager, Configuration configuration) : base(
+    public MainWindow(DutyManager dutyManager, Configuration configuration, WindowSystem windowSystem) : base(
         "Duty Tracker")
     {
         this.SizeConstraints = new WindowSizeConstraints
@@ -27,6 +28,7 @@ public sealed class MainWindow : Window, IDisposable
 
         this.dutyManager   = dutyManager;
         this.configuration = configuration;
+        this.windowSystem  = windowSystem;
     }
 
     public void Dispose()
@@ -49,72 +51,57 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTabItem("Status"))
             return;
 
-        if (!dutyManager.AnyDutiesStarted)
+        if (dutyManager.AnyDutiesStarted)
         {
-                // This only happens if no duties have been started since the plugin loaded.
-                ImGui.Text("No duties");
-                ImGui.EndTabItem();
-                return;
+            DutiesText();
         }
-
-        ImGui.Text($"Start Time: {dutyManager.Duty.StartOfDuty:hh\\:mm\\:ss tt}");
-        ImGui.Text($"Start of Current Run: {dutyManager.Duty.StartOfCurrentRun:hh\\:mm\\:ss tt}");
-        ImGui.Text($"End Time: {dutyManager.Duty.EndOfDuty:hh\\:mm\\:ss tt}");
-        ImGui.Text($"Elapsed Time: {dutyManager.TotalDutyDuration.MinutesAndSeconds()}");
-        if (dutyManager.DutyActive)
-            ImGui.Text($"Current Run Time: {dutyManager.CurrentRunDuration.MinutesAndSeconds()}");
         else
-            ImGui.Text($"Final Run Time: {dutyManager.FinalRunDuration.MinutesAndSeconds()}");
-        ImGui.Text($"In Duty: {dutyManager.DutyActive}");
-        ImGui.Text($"Party Deaths: {dutyManager.Duty.DeathEvents.Count}");
-        ImGui.Text($"Wipes: {dutyManager.Duty.WipeEvents.Count}");
-
-        if (dutyManager.Duty.DeathEvents.Count > 0)
         {
-            if (ImGui.BeginTable("deaths", 2, TableFlags))
-            {
-                ImGui.TableSetupColumn("Player Name");
-                ImGui.TableSetupColumn("Time of Death");
-                ImGui.TableHeadersRow();
-
-                foreach (var deathEvent in dutyManager.Duty.DeathEvents)
-                {
-                    ImGui.TableNextRow();
-                    ImGui.TableSetColumnIndex(0);
-                    ImGui.TextUnformatted($"{deathEvent.PlayerName}");
-                    ImGui.TableSetColumnIndex(1);
-                    ImGui.TextUnformatted($"{deathEvent.TimeOfDeath:hh\\:mm\\:ss tt}");
-                }
-            }
-
-            ImGui.EndTable();
+            NoDutiesText();
         }
+        
 
-        if (dutyManager.Duty.WipeEvents.Count > 0)
+        if (ImGui.Button("Open Explorer"))
         {
-            if (ImGui.BeginTable("wipes", 2, TableFlags))
-            {
-                ImGui.TableSetupColumn("Run Duration");
-                ImGui.TableSetupColumn("Time of Wipe");
-
-                ImGui.TableHeadersRow();
-
-                foreach (var wipeEvent in dutyManager.Duty.WipeEvents)
-                {
-                    ImGui.TableNextRow();
-                    ImGui.TableSetColumnIndex(0);
-                    ImGui.TextUnformatted($"{wipeEvent.Duration.MinutesAndSeconds()}");
-                    ImGui.TableSetColumnIndex(1);
-                    ImGui.TextUnformatted($"{wipeEvent.TimeOfWipe:hh\\:mm\\:ss tt}");
-                }
-            }
-
-            ImGui.EndTable();
+            windowSystem.GetWindow("Duty Explorer")!.IsOpen = true;
         }
-
-
-
+        
         ImGui.EndTabItem();
+    }
+
+    private void NoDutiesText()
+    {
+        // This only happens if no duties have been started since the plugin loaded.
+        ImGui.Text("No duties");
+    }
+
+    private void DutiesText()
+    {
+        var newestDuty         = dutyManager.Duties[^1];
+        var newestDutyDuration = dutyManager.DutyActive ? DateTime.Now - newestDuty.StartTime : newestDuty.EndTime - newestDuty.StartTime;
+        var newestRun          = newestDuty.RunList[^1];
+        var newestRunDuration  = dutyManager.DutyActive ? DateTime.Now - newestRun.StartTime : newestRun.EndTime - newestRun.StartTime; 
+        
+
+        ImGui.Text($"Start Time: {newestDuty.StartTime:hh\\:mm\\:ss tt}");
+        ImGui.Text($"Start of Current Run: {newestDuty.StartTime:hh\\:mm\\:ss tt}");
+        
+        
+        
+        if (dutyManager.DutyActive)
+        {
+            ImGui.Text($"Elapsed Time: {newestDutyDuration.MinutesAndSeconds()}");
+            ImGui.Text($"Current Run Time: {newestRunDuration.MinutesAndSeconds()}");
+        }
+        else
+        {
+            ImGui.Text($"Final Run Time: {newestRunDuration.MinutesAndSeconds()}");
+            ImGui.Text($"Total Duty Time: {newestDutyDuration.MinutesAndSeconds()}");
+        }
+
+        ImGui.Text($"In Duty: {dutyManager.DutyActive}");
+        ImGui.Text($"Party DeathList: {newestDuty.TotalDeaths}");
+        ImGui.Text($"Wipes: {newestDuty.TotalWipes}");
     }
 
     private void DisplayOptionsTab()

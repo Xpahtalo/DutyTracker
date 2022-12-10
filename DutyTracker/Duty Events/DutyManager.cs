@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Dalamud.Game.Text.SeStringHandling;
 using DutyTracker.Extensions;
 
@@ -6,98 +7,76 @@ namespace DutyTracker.Duty_Events;
 
 public class DutyManager
 {
-    /// <summary>
-    /// The current <see cref="Duty"/> being tracked.
-    /// </summary>
-    public Duty Duty { get; set; }
+    private Duty     currentDuty;
+    private Run      currentRun;
 
-    /// <summary>
-    /// Is a duty currently active.
-    /// </summary>
-    public bool DutyActive { get; set; }
-
-    public bool AnyDutiesStarted { get; set; }
-
-    /// <summary>
-    /// How elapsed time so far of the current duty, or how long it lasted if it is now over.
-    /// </summary>
-    public TimeSpan TotalDutyDuration => DutyActive ? DateTime.Now - Duty.StartOfDuty : Duty.EndOfDuty - Duty.StartOfDuty;
-
-    /// <summary>
-    /// The elapsed time so far of the current run, or how long the last run was if the duty is now over.
-    /// </summary>
-    public TimeSpan CurrentRunDuration => DutyActive ? DateTime.Now - Duty.StartOfCurrentRun : Duty.EndOfDuty - Duty.StartOfCurrentRun;
-    
-    public TimeSpan FinalRunDuration => (Duty.WipeEvents.Count == 0) ? Duty.EndOfDuty - Duty.StartOfDuty : Duty.WipeEvents[^1].Duration;
+    public bool       DutyActive       { get; private set; }
+    public List<Duty> Duties           { get; private set; }
+    public bool       AnyDutiesStarted { get; private set; }
 
 
     private readonly Configuration configuration;
 
-    public DutyManager(
-        Configuration configuration)
+    public DutyManager(Configuration configuration)
     {
         this.configuration = configuration;
-        Duty               = new Duty();
         DutyActive         = false;
-        AnyDutiesStarted   = false;
+        Duties             = new List<Duty>();
+        currentDuty        = new Duty();
+        
     }
 
-    /// <summary>
-    /// Starts a new instance.
-    /// </summary>
     public void StartDuty()
     {
-        Duty = new Duty
-               {
-                   StartOfDuty = DateTime.Now,
-               };
-
         DutyActive       = true;
         AnyDutiesStarted = true;
+        currentDuty = new Duty
+                      {
+                          TerritoryType = Service.ClientState.TerritoryType,
+                      };
+        Duties.Add(currentDuty);
+        StartNewRun();
     }
 
-    /// <summary>
-    /// Ends the current duty.
-    /// </summary>
     public void EndDuty()
     {
-        Duty.EndDuty();
-        DutyActive  = false;
+        DutyActive          = false;
+        currentDuty.EndTime = DateTime.Now;
+        
+        EndRun();
 
-        Service.ChatGui.Print(InfoMessage("Time in Duty: ", $"{TotalDutyDuration.MinutesAndSeconds()}"));
-        if (Duty.WipeEvents.Count > 0 || !configuration.SuppressEmptyValues)
+        var dutyDuration = currentDuty.EndTime - currentDuty.StartTime;
+
+        Service.ChatGui.Print(InfoMessage("Time in Duty: ", $"{dutyDuration.MinutesAndSeconds()}"));
+        if (currentDuty.RunList.Count > 1 || !configuration.SuppressEmptyValues)
         {
-            Service.ChatGui.Print(InfoMessage("Final Run Duration: ", $"{CurrentRunDuration.MinutesAndSeconds()}"));
-            Service.ChatGui.Print(InfoMessage("Wipes: ",              $"{Duty.WipeEvents.Count}"));
+            var finalRun         = currentDuty.RunList[^1];
+            var finalRunDuration = finalRun.EndTime - finalRun.StartTime;
+            
+            Service.ChatGui.Print(InfoMessage("Final Run Duration: ", $"{finalRunDuration.MinutesAndSeconds()}"));
+            Service.ChatGui.Print(InfoMessage("Wipes: ",              $"{currentDuty.TotalWipes}"));
         }
 
-        if (Duty.DeathEvents.Count > 0 || !configuration.SuppressEmptyValues)
-            Service.ChatGui.Print(InfoMessage("Party Deaths: ", $"{Duty.DeathEvents.Count}"));
+        var totalDeaths = currentDuty.TotalDeaths;
+        
+        if (totalDeaths > 0 || !configuration.SuppressEmptyValues)
+            Service.ChatGui.Print(InfoMessage("Party DeathList: ", $"{totalDeaths}"));
     }
 
-    /// <summary>
-    /// Adds a new <see cref="DeathEvent"/> to the list of deaths.
-    /// </summary>
-    /// <param name="deathEvent">The <see cref="DeathEvent"/> to be added to the list.</param>
-    public void AddDeathEvent(DeathEvent deathEvent)
+    public void AddDeath(Death death)
     {
-        Duty.AddDeathEvent(deathEvent);
+        currentRun.DeathList.Add(death);
     }
 
-    /// <summary>
-    /// Triggers a new wipe event in <see cref="Duty"/>.
-    /// </summary>
-    public void AddWipeEvent()
+    public void EndRun()
     {
-        Duty.AddWipeEvent();
+        currentRun.EndTime = DateTime.Now;
     }
 
-    /// <summary>
-    /// Begins the timer on a new run after a wipe.
-    /// </summary>
     public void StartNewRun()
     {
-        Duty.StartNewRun();
+        currentRun = new Run();
+        currentDuty.RunList.Add(currentRun);
     }
 
     private SeString InfoMessage(string label, string info)

@@ -109,7 +109,7 @@ public class CombatEventCapture : IDisposable
             if (type == ActorControlDeathCode)
             {
                 PluginLog.Debug("Death Event detected.");
-                dutyManager.AddDeathEvent(new DeathEvent(entityId, p.Name.TextValue, DateTime.Now));
+                dutyManager.AddDeath(new Death(entityId, p.Name.TextValue, DateTime.Now));
             }
         }
         catch (Exception e)

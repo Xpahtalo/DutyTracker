@@ -101,7 +101,7 @@ public unsafe class DutyEventManager : IDisposable
                     // Party Wipe
                     case 0x40000005:
                         PluginLog.Debug("Party Wipe | DutyEventFunction");
-                        AddWipe();
+                        Wipe();
                         break;
 
                     // Duty Recommence
@@ -128,9 +128,9 @@ public unsafe class DutyEventManager : IDisposable
     }
 
 
-    private void AddWipe()
+    private void Wipe()
     {
-        dutyManager.AddWipeEvent();
+        dutyManager.EndRun();
     }
 
     private void StartDuty()
