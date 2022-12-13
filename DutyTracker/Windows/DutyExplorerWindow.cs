@@ -12,15 +12,16 @@ namespace DutyTracker.Windows;
 
 public class DutyExplorerWindow : Window, IDisposable
 {
-    private readonly DutyManager   dutyManager;
-    private          Duty?         selectedDuty;
-    private          Run?          selectedRun;
+    private readonly DutyManager dutyManager;
+    private          Duty?       selectedDuty;
+    private          Run?        selectedRun;
 
     // This value is just chosen to look good.
     private static readonly float InfoWidth = ImGui.CalcTextSize("###########################").X;
+
     private static readonly ImGuiTableFlags DeathsTableFlags = ImGuiTableFlags.BordersV      |
-                                                ImGuiTableFlags.BordersOuterH |
-                                                ImGuiTableFlags.RowBg;
+                                                               ImGuiTableFlags.BordersOuterH |
+                                                               ImGuiTableFlags.RowBg;
 
     public DutyExplorerWindow(DutyManager dutyManager)
         : base("Duty Explorer")
@@ -30,17 +31,17 @@ public class DutyExplorerWindow : Window, IDisposable
                               MinimumSize = new Vector2(820,            330),
                               MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
                           };
-        
-        this.dutyManager   = dutyManager;
-        
+
+        this.dutyManager = dutyManager;
+
     }
 
-    public          void Dispose() { }
-    
+    public void Dispose() { }
+
     public override void Draw()
     {
         var availableRegion = ImGui.GetContentRegionAvail();
-        
+
         DrawDutyList(new Vector2(availableRegion.X * 0.25f, 0));
         ImGui.SameLine();
         DrawRunList(new Vector2(availableRegion.X * 0.25f, 0), selectedDuty);
@@ -59,7 +60,7 @@ public class DutyExplorerWindow : Window, IDisposable
             {
                 var listWidth  = ImGui.GetContentRegionAvail().X;
                 var listLength = (ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing()) * ImGui.GetTextLineHeightWithSpacing();
-                
+
                 if (ImGui.BeginListBox("##DutyList", new Vector2(listWidth, listLength)))
                 {
                     foreach (var duty in dutyManager.Duties)
@@ -92,16 +93,16 @@ public class DutyExplorerWindow : Window, IDisposable
             if (duty is not null)
             {
                 var averageDeaths = duty.TotalWipes == 0 ? 0 : duty.TotalDeaths / duty.TotalWipes;
-                XGui.InfoText("Duty Start Time:",  $"{duty.StartTime:hh\\:mm\\:ss tt}",         InfoWidth);
+                XGui.InfoText("Duty Start Time:", $"{duty.StartTime:hh\\:mm\\:ss tt}",         InfoWidth);
                 XGui.InfoText($"Duty End Time:",  $"{duty.EndTime:hh\\:mm\\:ss tt}",           InfoWidth);
                 XGui.InfoText($"Duty Duration:",  $"{duty.Duration.HoursMinutesAndSeconds()}", InfoWidth);
                 XGui.InfoText($"Wipes:",          $"{duty.TotalWipes}",                        InfoWidth);
                 XGui.InfoText($"Deaths:",         $"{duty.TotalDeaths}",                       InfoWidth);
                 XGui.InfoText($"Average Deaths:", $"{averageDeaths}",                          InfoWidth);
-                
+
                 var listWidth  = ImGui.GetContentRegionAvail().X;
                 var listLength = (ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing()) * ImGui.GetTextLineHeightWithSpacing();
-                
+
                 if (ImGui.BeginListBox("##RunList", new Vector2(listWidth, listLength)))
                 {
                     var index = 1;
@@ -113,6 +114,7 @@ public class DutyExplorerWindow : Window, IDisposable
                         }
                     }
                 }
+
                 ImGui.EndListBox();
             }
             else
@@ -120,6 +122,7 @@ public class DutyExplorerWindow : Window, IDisposable
                 ImGui.Text("Please select a duty.");
             }
         }
+
         ImGui.EndChild();
     }
 
@@ -138,12 +141,11 @@ public class DutyExplorerWindow : Window, IDisposable
                 {
                     if (ImGui.BeginTable("deaths", 2, DeathsTableFlags))
                     {
-                        XGui.DrawTableHeader("Player Names", "Time of Death");
+                        XGui.TableHeader("Player Names", "Time of Death");
 
                         foreach (var death in run.DeathList)
                         {
-
-                            XGui.DrawTableRow($"{death.PlayerName}", $"{death.TimeOfDeath:hh\\:mm\\:ss tt}");
+                            XGui.TableRow($"{death.PlayerName}", $"{death.TimeOfDeath:hh\\:mm\\:ss tt}");
                         }
                     }
 
@@ -155,11 +157,7 @@ public class DutyExplorerWindow : Window, IDisposable
                 ImGui.Text("Please select a run.");
             }
         }
+
         ImGui.EndChild();
     }
-
-
-
-
-
 }

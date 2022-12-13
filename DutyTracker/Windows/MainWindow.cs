@@ -51,50 +51,39 @@ public sealed class MainWindow : Window, IDisposable
 
         if (dutyManager.AnyDutiesStarted)
         {
-            DutiesText();
+            var newestDuty = dutyManager.Duties[^1];
+            var newestRun  = newestDuty.RunList[^1];
+
+            XGui.InfoText($"Start Time:",           $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
+            XGui.InfoText($"Start of Current Run:", $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
+            if (dutyManager.DutyActive)
+            {
+                XGui.InfoText($"Elapsed Time:",     $"{newestDuty.Duration.MinutesAndSeconds()}");
+                XGui.InfoText($"Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
+            }
+            else
+            {
+                XGui.InfoText($"Final Run Time:",  $"{newestDuty.Duration.MinutesAndSeconds()}");
+                XGui.InfoText($"Total Duty Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
+            }
+
+            XGui.InfoText($"In Duty:",         $"{dutyManager.DutyActive}");
+            XGui.InfoText($"Party DeathList:", $"{newestDuty.TotalDeaths}");
+            XGui.InfoText($"Wipes:",           $"{newestDuty.TotalWipes}");
         }
         else
         {
-            NoDutiesText();
+            // This only happens if no duties have been started since the plugin loaded.
+            ImGui.Text("No duties");
         }
-        
+
 
         if (ImGui.Button("Open Explorer"))
         {
             windowSystem.GetWindow("Duty Explorer")!.IsOpen = true;
         }
-        
+
         ImGui.EndTabItem();
-    }
-
-    private void NoDutiesText()
-    {
-        // This only happens if no duties have been started since the plugin loaded.
-        ImGui.Text("No duties");
-    }
-
-    private void DutiesText()
-    {
-        var newestDuty         = dutyManager.Duties[^1];
-        var newestDutyDuration = dutyManager.DutyActive ? DateTime.Now - newestDuty.StartTime : newestDuty.EndTime - newestDuty.StartTime;
-        var newestRun          = newestDuty.RunList[^1];
-        var newestRunDuration  = dutyManager.DutyActive ? DateTime.Now - newestRun.StartTime : newestRun.EndTime - newestRun.StartTime;
-
-        XGui.InfoText($"Start Time:",           $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
-        XGui.InfoText($"Start of Current Run:", $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
-        if (dutyManager.DutyActive)
-        {
-            XGui.InfoText($"Elapsed Time:",     $"{newestDutyDuration.MinutesAndSeconds()}");
-            XGui.InfoText($"Current Run Time:", $"{newestRunDuration.MinutesAndSeconds()}");
-        }
-        else
-        {
-            XGui.InfoText($"Final Run Time:",  $"{newestRunDuration.MinutesAndSeconds()}");
-            XGui.InfoText($"Total Duty Time:", $"{newestDutyDuration.MinutesAndSeconds()}");
-        }
-        XGui.InfoText($"In Duty:",         $"{dutyManager.DutyActive}");
-        XGui.InfoText($"Party DeathList:", $"{newestDuty.TotalDeaths}");
-        XGui.InfoText($"Wipes:",           $"{newestDuty.TotalWipes}");
     }
 
     private void DisplayOptionsTab()

@@ -15,7 +15,7 @@ internal static class XGui
         ImGui.Text(value);
     }
     
-    internal static void DrawTableHeader(params string[] columnTitles)
+    internal static void TableHeader(params string[] columnTitles)
     {
         foreach (var title in columnTitles)
         {
@@ -24,7 +24,7 @@ internal static class XGui
         ImGui.TableHeadersRow();
         ImGui.TableNextRow();
     }
-    internal static void DrawTableRow(params string[] values)
+    internal static void TableRow(params string[] values)
     {
         
         for (var i =0; i < values.Length; i++ )
