@@ -41,7 +41,7 @@ public sealed class DutyTracker : IDalamudPlugin
         
         
         WindowSystem.AddWindow(new MainWindow(DutyManager, Configuration, WindowSystem));
-        WindowSystem.AddWindow(new DutyExplorerWindow(DutyManager, Configuration));
+        WindowSystem.AddWindow(new DutyExplorerWindow(DutyManager));
 
         this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
                                                     {

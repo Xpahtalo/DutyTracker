@@ -9,18 +9,20 @@ namespace DutyTracker.Windows;
 
 public sealed class MainWindow : Window, IDisposable
 {
-    private DutyManager   dutyManager;
-    private Configuration configuration;
-    private WindowSystem  windowSystem;
-
+    private readonly DutyManager   dutyManager;
+    private readonly Configuration configuration;
+    private readonly WindowSystem  windowSystem;
+    
     public MainWindow(DutyManager dutyManager, Configuration configuration, WindowSystem windowSystem) : base(
         "Duty Tracker")
     {
         this.SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = new Vector2(375, 330),
-            MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
+            MinimumSize = new Vector2(248, 250),
+            MaximumSize = new Vector2(248, 250),
         };
+
+        Flags = ImGuiWindowFlags.NoResize;
 
         this.dutyManager   = dutyManager;
         this.configuration = configuration;
@@ -76,28 +78,23 @@ public sealed class MainWindow : Window, IDisposable
         var newestDuty         = dutyManager.Duties[^1];
         var newestDutyDuration = dutyManager.DutyActive ? DateTime.Now - newestDuty.StartTime : newestDuty.EndTime - newestDuty.StartTime;
         var newestRun          = newestDuty.RunList[^1];
-        var newestRunDuration  = dutyManager.DutyActive ? DateTime.Now - newestRun.StartTime : newestRun.EndTime - newestRun.StartTime; 
-        
+        var newestRunDuration  = dutyManager.DutyActive ? DateTime.Now - newestRun.StartTime : newestRun.EndTime - newestRun.StartTime;
 
-        ImGui.Text($"Start Time: {newestDuty.StartTime:hh\\:mm\\:ss tt}");
-        ImGui.Text($"Start of Current Run: {newestDuty.StartTime:hh\\:mm\\:ss tt}");
-        
-        
-        
+        XGui.InfoText($"Start Time:",           $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
+        XGui.InfoText($"Start of Current Run:", $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
         if (dutyManager.DutyActive)
         {
-            ImGui.Text($"Elapsed Time: {newestDutyDuration.MinutesAndSeconds()}");
-            ImGui.Text($"Current Run Time: {newestRunDuration.MinutesAndSeconds()}");
+            XGui.InfoText($"Elapsed Time:",     $"{newestDutyDuration.MinutesAndSeconds()}");
+            XGui.InfoText($"Current Run Time:", $"{newestRunDuration.MinutesAndSeconds()}");
         }
         else
         {
-            ImGui.Text($"Final Run Time: {newestRunDuration.MinutesAndSeconds()}");
-            ImGui.Text($"Total Duty Time: {newestDutyDuration.MinutesAndSeconds()}");
+            XGui.InfoText($"Final Run Time:",  $"{newestRunDuration.MinutesAndSeconds()}");
+            XGui.InfoText($"Total Duty Time:", $"{newestDutyDuration.MinutesAndSeconds()}");
         }
-
-        ImGui.Text($"In Duty: {dutyManager.DutyActive}");
-        ImGui.Text($"Party DeathList: {newestDuty.TotalDeaths}");
-        ImGui.Text($"Wipes: {newestDuty.TotalWipes}");
+        XGui.InfoText($"In Duty:",         $"{dutyManager.DutyActive}");
+        XGui.InfoText($"Party DeathList:", $"{newestDuty.TotalDeaths}");
+        XGui.InfoText($"Wipes:",           $"{newestDuty.TotalWipes}");
     }
 
     private void DisplayOptionsTab()

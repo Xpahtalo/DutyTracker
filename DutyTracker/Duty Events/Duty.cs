@@ -10,6 +10,7 @@ public class Duty
     public ushort    TerritoryType { get; set; }
     public DateTime  StartTime     { get; set; } = DateTime.Now;
     public DateTime  EndTime       { get; set; } = DateTime.MinValue;
+    public TimeSpan  Duration      => EndTime == DateTime.MinValue ? DateTime.Now - StartTime : EndTime - StartTime;
     public List<Run> RunList       { get; set; } = new List<Run>();
 
     public int TotalDeaths => RunList.Sum(run => run.DeathList.Count);
