@@ -26,7 +26,7 @@ internal static class XGui
     }
     internal static void TableRow(params string[] values)
     {
-        
+        ImGui.TableNextRow();
         for (var i =0; i < values.Length; i++ )
         {
             ImGui.TableSetColumnIndex(i);
