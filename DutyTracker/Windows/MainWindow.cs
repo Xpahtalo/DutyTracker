@@ -49,22 +49,24 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTabItem("Status"))
             return;
 
-        if (dutyManager.AnyDutiesStarted)
+        var newestDuty = dutyManager.GetMostRecentDuty();
+        var newestRun  = dutyManager.GetMostRecentRun();
+        
+        if (newestDuty is not null)
         {
-            var newestDuty = dutyManager.Duties[^1];
-            var newestRun  = newestDuty.RunList[^1];
-
             XGui.InfoText($"Start Time:",           $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
             XGui.InfoText($"Start of Current Run:", $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
             if (dutyManager.DutyActive)
             {
                 XGui.InfoText($"Elapsed Time:",     $"{newestDuty.Duration.MinutesAndSeconds()}");
-                XGui.InfoText($"Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
+                if (newestRun is not null)
+                    XGui.InfoText($"Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
             }
             else
             {
                 XGui.InfoText($"Final Run Time:",  $"{newestDuty.Duration.MinutesAndSeconds()}");
-                XGui.InfoText($"Total Duty Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
+                if (newestRun is not null)
+                    XGui.InfoText($"Total Duty Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
             }
 
             XGui.InfoText($"In Duty:",         $"{dutyManager.DutyActive}");

@@ -19,9 +19,7 @@ public class DutyExplorerWindow : Window, IDisposable
     // This value is just chosen to look good.
     private static readonly float InfoWidth = ImGui.CalcTextSize("###########################").X;
 
-    private static readonly ImGuiTableFlags DeathsTableFlags = ImGuiTableFlags.BordersV      |
-                                                               ImGuiTableFlags.BordersOuterH |
-                                                               ImGuiTableFlags.RowBg;
+    private const ImGuiTableFlags DeathsTableFlags = ImGuiTableFlags.BordersV | ImGuiTableFlags.BordersOuterH | ImGuiTableFlags.RowBg;
 
     public DutyExplorerWindow(DutyManager dutyManager)
         : base("Duty Explorer")
@@ -63,7 +61,7 @@ public class DutyExplorerWindow : Window, IDisposable
 
                 if (ImGui.BeginListBox("##DutyList", new Vector2(listWidth, listLength)))
                 {
-                    foreach (var duty in dutyManager.Duties)
+                    foreach (var duty in dutyManager.DutyList)
                     {
                         if (ImGui.Selectable($"{Service.DataManager.Excel.GetSheet<TerritoryType>()!.GetRow(duty.TerritoryType)!.PlaceName.Value!.Name}##{index}", selectedDuty == duty))
                         {

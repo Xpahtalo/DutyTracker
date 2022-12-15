@@ -7,13 +7,30 @@ namespace DutyTracker.Duty_Events;
 
 public class DutyManager
 {
-    private Duty     currentDuty;
-    private Run      currentRun;
+    private Duty? currentDuty;
+    private Run?  currentRun;
 
     public bool       DutyActive       { get; private set; }
-    public List<Duty> Duties           { get; private set; }
+    public List<Duty> DutyList         { get; private set; }
     public bool       AnyDutiesStarted { get; private set; }
 
+    public Duty? GetMostRecentDuty()
+    {
+        if (currentDuty is not null)
+            return currentDuty;
+        if (DutyList.Count > 0)
+            return DutyList[^1];
+        return null;
+    }
+
+    public Run? GetMostRecentRun()
+    {
+        if (currentDuty is not null)
+            return currentRun;
+        if (GetMostRecentDuty()?.RunList.Count > 0)
+            return GetMostRecentDuty()?.RunList[^1];
+        return null;
+    }
 
     private readonly Configuration configuration;
 
@@ -21,9 +38,9 @@ public class DutyManager
     {
         this.configuration = configuration;
         DutyActive         = false;
-        Duties             = new List<Duty>();
-        currentDuty        = new Duty();
-        currentRun         = new Run();
+        DutyList           = new List<Duty>();
+        currentDuty        = null;
+        currentRun         = null;
     }
 
     public void StartDuty()
@@ -34,14 +51,14 @@ public class DutyManager
                       {
                           TerritoryType = Service.ClientState.TerritoryType,
                       };
-        Duties.Add(currentDuty);
+        
         StartNewRun();
     }
 
     public void EndDuty()
     {
         DutyActive          = false;
-        currentDuty.EndTime = DateTime.Now;
+        currentDuty!.EndTime = DateTime.Now;
         
         EndRun();
 
@@ -61,22 +78,23 @@ public class DutyManager
         
         if (totalDeaths > 0 || !configuration.SuppressEmptyValues)
             Service.ChatGui.Print(InfoMessage("Party Deaths: ", $"{totalDeaths}"));
+        DutyList.Add(currentDuty);
     }
 
     public void AddDeath(Death death)
     {
-        currentRun.DeathList.Add(death);
+        currentRun?.DeathList.Add(death);
     }
 
     public void EndRun()
     {
-        currentRun.EndTime = DateTime.Now;
+        currentRun!.EndTime = DateTime.Now;
     }
 
     public void StartNewRun()
     {
         currentRun = new Run();
-        currentDuty.RunList.Add(currentRun);
+        currentDuty!.RunList.Add(currentRun);
     }
 
     private SeString InfoMessage(string label, string info)
