@@ -70,7 +70,7 @@ public sealed class MainWindow : Window, IDisposable
             }
 
             XGui.InfoText($"In Duty:",         $"{dutyManager.DutyActive}");
-            XGui.InfoText($"Party DeathList:", $"{newestDuty.TotalDeaths}");
+            XGui.InfoText($"Party Deaths:", $"{newestDuty.TotalDeaths}");
             XGui.InfoText($"Wipes:",           $"{newestDuty.TotalWipes}");
         }
         else
