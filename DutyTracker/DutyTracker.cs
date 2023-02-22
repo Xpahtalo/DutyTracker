@@ -3,6 +3,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Interface.Windowing;
 using DutyTracker.Duty_Events;
+using DutyTracker.Services;
 using DutyTracker.Windows;
 
 namespace DutyTracker;
@@ -31,6 +32,7 @@ public sealed class DutyTracker : IDalamudPlugin
         this.CommandManager  = commandManager;
 
         PluginInterface.Create<Service>();
+        Service.PlayerCharacterState = new PlayerCharacterState();
         
         this.Configuration = this.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         this.Configuration.Initialize(this.PluginInterface);
@@ -42,6 +44,7 @@ public sealed class DutyTracker : IDalamudPlugin
         
         WindowSystem.AddWindow(new MainWindow(DutyManager, Configuration, WindowSystem));
         WindowSystem.AddWindow(new DutyExplorerWindow(DutyManager));
+        WindowSystem.AddWindow(new DebugWindow());
 
         this.CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
                                                     {
@@ -56,8 +59,10 @@ public sealed class DutyTracker : IDalamudPlugin
     {
         this.WindowSystem.RemoveAllWindows();
         this.CommandManager.RemoveHandler(CommandName);
+        
         DutyEventManager.Dispose();
         CombatEventCapture.Dispose();
+        Service.PlayerCharacterState.Dispose();
     }
 
     private void OnCommand(string command, string args)

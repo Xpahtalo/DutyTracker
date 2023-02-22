@@ -85,6 +85,11 @@ public sealed class MainWindow : Window, IDisposable
             windowSystem.GetWindow("Duty Explorer")!.IsOpen = true;
         }
 
+        if (ImGui.Button("Open Debug"))
+        {
+            windowSystem.GetWindow("Debug")!.IsOpen = true;
+        }
+
         ImGui.EndTabItem();
     }
 

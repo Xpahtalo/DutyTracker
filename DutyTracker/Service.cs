@@ -9,6 +9,7 @@ using Dalamud.Game.Gui;
 using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using DutyTracker.Services;
 
 namespace DutyTracker;
 
@@ -24,4 +25,6 @@ public class Service
     [PluginService] public static Framework Framework { get; private set; } = null!;
     [PluginService] public static ObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] public static GameGui GameGui { get; private set; } = null!;
+
+    internal static PlayerCharacterState PlayerCharacterState = null!;
 }
