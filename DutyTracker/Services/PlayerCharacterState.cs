@@ -97,6 +97,8 @@ public unsafe class PlayerCharacterState : IDisposable
 
                 break;
             case State.WaitingForData:
+                // Need the alliance string array to be populated to determine which parties are which alliance,
+                // but it is not populated until the game is ready to draw the alliance list.
                 if (IsAllianceStringDataPopulated())
                 {
                     SetAlliances(groupManager);
@@ -151,24 +153,22 @@ public unsafe class PlayerCharacterState : IDisposable
 
         PartyMember* TryGetAllianceMemberByIndex(int i, out bool found)
         {
-            try
+            var member = groupManager->GetAllianceMemberByIndex(i);
+            if (member->ObjectID != nint.Zero)
             {
-                var member = groupManager->GetAllianceMemberByIndex(i);
                 found = true;
                 return member;
             }
-            catch (InvalidOperationException ex)
-            {
-                found = false;
-                return null;
-            }
+            PluginLog.Warning("false");
+            found = false;
+            return null;
         }
     }
 
     private void AddPlayer(PartyMember* allianceMember, int i)
     {
         var newPlayer = new CachedPartyMember(Marshal.PtrToStringUTF8(new IntPtr(allianceMember->Name)), allianceMember->ObjectID, allianceMember->CurrentHP, GetAlliance(i));
-        PluginLog.Debug($"Detected new player: {newPlayer}");
+        PluginLog.Debug($"Detected new player: {i}, {newPlayer}");
         allianceCache[i] = newPlayer;
     }
 
@@ -178,7 +178,7 @@ public unsafe class PlayerCharacterState : IDisposable
         var objectId   = allianceCache[i].ObjectId;
         var alliance   = allianceCache[i].Alliance;
 
-        PluginLog.Debug($"Alliance member died: {playerName}, {objectId}, {alliance}");
+        PluginLog.Debug($"Alliance member died: {i}, {playerName}, {objectId}, {alliance}");
         OnPlayerDeath?.Invoke(playerName,
                               objectId,
                               alliance);
