@@ -48,8 +48,14 @@ public unsafe class PlayerCharacterState : IDisposable
     private readonly int allianceStringArray     = 63;
     private readonly int allianceStringArraySize = 45;
 
-    private readonly int partySize    = 8;
-    private readonly int allianceSize = 16;
+    private const int Party1Position = 0;
+    private const int Party2Position = 9;
+    private const int Party3Position = 18;
+    private const int Party4Position = 27;
+    private const int Party5Position = 36;
+    private const int AllianceSize = 40;
+    private const int PartySize    = 8;
+
 
     private readonly CachedPartyMember?[] allianceCache;
 
@@ -70,7 +76,7 @@ public unsafe class PlayerCharacterState : IDisposable
     public PlayerCharacterState()
     {
         state                    =  State.NoGroup;
-        allianceCache            =  new CachedPartyMember?[allianceSize];
+        allianceCache            =  new CachedPartyMember?[AllianceSize];
         Service.Framework.Update += FrameworkUpdate;
         PluginLog.Verbose("PlayerCharacterState initialized.");
     }
@@ -116,52 +122,83 @@ public unsafe class PlayerCharacterState : IDisposable
                     break;
                 }
 
-                for (var i = 0; i < allianceSize; i++)
+                UpdatePlayerCache(groupManager);
+                break;
+        }
+    }
+
+    private void UpdatePlayerCache(GroupManager* groupManager)
+    {
+        for (var i = 0; i < AllianceSize; i++)
+        {
+            var allianceMember = TryGetAllianceMemberByIndex(out var playerExists);
+
+            if (allianceCache[i] is not null)
+            {
+                // Have to check if the player exists first, because the health check will be true if they don't.
+                // This would result in player being marked dead instead of leaving.
+                if (!playerExists)
                 {
-                    var allianceMember = TryGetAllianceMemberByIndex(i, out var playerExists);
-
-                    if (allianceCache[i] is not null)
+                    PlayerLeft(i);
+                }
+                else
+                {
+                    if (allianceCache[i]!.Hp != allianceMember->CurrentHP)
                     {
-                        if (playerExists)
-                        {
-                            if (allianceCache[i]!.Hp != allianceMember->CurrentHP)
-                            {
-                                allianceCache[i]!.Hp = allianceMember->CurrentHP;
+                        allianceCache[i]!.Hp = allianceMember->CurrentHP;
 
-                                if (allianceCache[i]!.Hp == 0)
-                                {
-                                    PlayerDied(i);
-                                }
-                            }
-                        }
-                        else
+                        if (allianceCache[i]!.Hp == 0)
                         {
-                            PlayerLeft(i);
-                        }
-                    }
-                    else
-                    {
-                        if (playerExists)
-                        {
-                            AddPlayer(allianceMember, i);
+                            PlayerDied(i);
                         }
                     }
                 }
-
-                break;
-        }
-
-        PartyMember* TryGetAllianceMemberByIndex(int i, out bool found)
-        {
-            var member = groupManager->GetAllianceMemberByIndex(i);
-            if (member->ObjectID != nint.Zero)
-            {
-                found = true;
-                return member;
             }
-            PluginLog.Warning("false");
-            found = false;
-            return null;
+            else
+            {
+                if (playerExists)
+                {
+                    AddPlayer(allianceMember, i);
+                }
+            }
+
+            PartyMember* TryGetAllianceMemberByIndex(out bool found)
+            {
+                int group;
+                int index;
+
+                // Alliance size and count changes depending on the alliance type.
+                // ThreeParty is 2 other parties of 8 members.
+                // SixParty is 5 other parties of 4 types.
+                if (allianceType == AllianceType.ThreeParty)
+                {
+                    group = i % 2;
+                    index = i % 8;
+                }
+                else
+                {
+                    group = i % 5;
+                    index = i % 4;
+                }
+
+                PluginLog.Debug($"{i}, {group}, {index}");
+                try
+                {
+                    var member = groupManager->GetAllianceMemberByGroupAndIndex(group, index);
+                    if (member->ObjectID != nint.Zero)
+                    {
+                        found = true;
+                        return member;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    PluginLog.Warning(ex.ToString());
+                }
+
+                found = false; 
+                return null;
+            }
         }
     }
 
@@ -200,45 +237,37 @@ public unsafe class PlayerCharacterState : IDisposable
         return !string.IsNullOrWhiteSpace(Marshal.PtrToStringUTF8(new IntPtr(stringArray[0])));
     }
 
-    private Alliance GetAlliance(int i)
-    {
-        if (allianceType == AllianceType.ThreeParty)
+    private Alliance GetAlliance(int i) =>
+        i switch
         {
-            return i switch
-            {
-                < 8  => alliance1,
-                < 16 => alliance2,
-                _    => Alliance.None,
-            };
-        }
-
-        return i switch
-        {
-            < 4  => alliance1,
-            < 8  => alliance2,
-            < 12 => alliance3,
-            < 16 => alliance4,
-            < 20 => alliance5,
-            _    => Alliance.None,
+            < Party1Position => alliance1,
+            < Party2Position => alliance2,
+            < Party3Position => alliance3,
+            < Party4Position => alliance4,
+            < Party5Position => alliance5,
+            _                => Alliance.None,
         };
-    }
 
     private void SetAlliances(GroupManager* groupManager)
     {
         var stringArray =
             FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
                 ->AtkModule.AtkArrayDataHolder.StringArrays[63]->StringArray;
-
+        PluginLog.Debug("Three Party Strings");
+        PluginLog.Debug($"  string{Party1Position}:  {Marshal.PtrToStringUTF8(new IntPtr(stringArray[Party1Position]))}");
+        PluginLog.Debug($"  string{Party2Position}:  {Marshal.PtrToStringUTF8(new IntPtr(stringArray[Party2Position]))}");
+        PluginLog.Debug($"  string{Party3Position}: {Marshal.PtrToStringUTF8(new IntPtr(stringArray[Party3Position]))}");
+        PluginLog.Debug($"  string{Party4Position}: {Marshal.PtrToStringUTF8(new IntPtr(stringArray[Party4Position]))}");
+        PluginLog.Debug($"  string{Party5Position}: {Marshal.PtrToStringUTF8(new IntPtr(stringArray[Party5Position]))}");
+        alliance1 = AllianceExtensions.ToAlliance(stringArray[Party1Position]);
+        alliance2 = AllianceExtensions.ToAlliance(stringArray[Party2Position]);
+        alliance3 = AllianceExtensions.ToAlliance(stringArray[Party3Position]);
+        alliance4 = AllianceExtensions.ToAlliance(stringArray[Party4Position]);
+        alliance5 = AllianceExtensions.ToAlliance(stringArray[Party5Position]);
+        
         if (groupManager->AllianceFlags == 1)
         {
             allianceType = AllianceType.ThreeParty;
-            PluginLog.Debug("Three Party Strings");
-            PluginLog.Debug($"  string0: {Marshal.PtrToStringUTF8(new IntPtr(stringArray[0]))}");
-            PluginLog.Debug($"  string9: {Marshal.PtrToStringUTF8(new IntPtr(stringArray[9]))}");
-            alliance1 = AllianceExtensions.ToAlliance(stringArray[0]);
-            alliance2 = AllianceExtensions.ToAlliance(stringArray[9]);
-            alliance3 = Alliance.None;
-            alliance4 = Alliance.None;
             partyAlliance = (alliance1, alliance2) switch
             {
                 (Alliance.A, Alliance.B) => Alliance.C,
@@ -250,17 +279,6 @@ public unsafe class PlayerCharacterState : IDisposable
         else
         {
             allianceType = AllianceType.SixParty;
-            PluginLog.Debug("Six Party Strings");
-            PluginLog.Debug($"  string0:  {Marshal.PtrToStringUTF8(new IntPtr(stringArray[0]))}");
-            PluginLog.Debug($"  string4:  {Marshal.PtrToStringUTF8(new IntPtr(stringArray[4]))}");
-            PluginLog.Debug($"  string9:  {Marshal.PtrToStringUTF8(new IntPtr(stringArray[9]))}");
-            PluginLog.Debug($"  string14: {Marshal.PtrToStringUTF8(new IntPtr(stringArray[14]))}");
-            PluginLog.Debug($"  string19: {Marshal.PtrToStringUTF8(new IntPtr(stringArray[19]))}");
-            alliance1 = AllianceExtensions.ToAlliance(stringArray[0]);
-            alliance2 = AllianceExtensions.ToAlliance(stringArray[4]);
-            alliance3 = AllianceExtensions.ToAlliance(stringArray[9]);
-            alliance4 = AllianceExtensions.ToAlliance(stringArray[14]);
-            alliance5 = AllianceExtensions.ToAlliance(stringArray[19]);
             partyAlliance = (alliance1, alliance2, alliance3, alliance4, alliance5) switch
             {
                 (Alliance.A, Alliance.B, Alliance.C, Alliance.D, Alliance.E) => Alliance.F,
@@ -276,12 +294,12 @@ public unsafe class PlayerCharacterState : IDisposable
 
         PluginLog.Verbose($"Alliance Type: {allianceType}");
         PluginLog.Verbose($"Party Alliance: {partyAlliance}");
-        PluginLog.Verbose($"Alliance Parties: {alliance1}, {alliance2}, {alliance3}, {alliance4}");
+        PluginLog.Verbose($"Alliance Parties: {alliance1}, {alliance2}, {alliance3}, {alliance4}, {alliance5}");
     }
 
     private void ClearAllianceCache()
     {
-        for (var i = 0; i < allianceSize; i++)
+        for (var i = 0; i < AllianceSize; i++)
         {
             allianceCache[i] = null;
         }
@@ -345,13 +363,28 @@ public unsafe class PlayerCharacterState : IDisposable
         {
             XGui.TableHeader("Index", "Name", "ObjectID", "CurrentHP", "ClassJob");
             var allianceMembers = (PartyMember*)groupManager->AllianceMembers;
-            for (var i = 0; i < allianceSize; i++)
+            for (var i = 0; i < AllianceSize; i++)
             {
                 DebugPartyMemberRow(allianceMembers[i], i);
             }
         }
 
         ImGui.EndTable();
+    }
+
+    public void DebugCache()
+    {
+        ImGui.Text("Cache");
+
+        for(var i =0;i<allianceCache.Length;i++)
+        {
+            ImGui.Text($"{i}");
+            if (allianceCache[i] is not null)
+            {
+                ImGui.SameLine();
+                ImGui.Text($"{allianceCache[i]}");
+            }
+        }
     }
 
     #endregion

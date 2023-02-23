@@ -18,19 +18,30 @@ public class DebugWindow : Window, IDisposable
     {
         if (ImGui.BeginTabBar("DebugTabBar"))
         {
-            DisplayGroupDebug();
+            DisplayFFXIVDebug();
+            DisplayPlayerCharacterStateDebug();
         }
 
         ImGui.EndTabBar();
     }
 
-    private void DisplayGroupDebug()
+    private void DisplayFFXIVDebug()
     {
         if (!ImGui.BeginTabItem("Group"))
             return;
         
         Service.PlayerCharacterState.ImGuiParty();
         
+        ImGui.EndTabItem();
+    }
+
+    private void DisplayPlayerCharacterStateDebug()
+    {
+        if (!ImGui.BeginTabItem("PlayerCharacterState"))
+            return;
+     
+        Service.PlayerCharacterState.DebugCache();
+
         ImGui.EndTabItem();
     }
 }
