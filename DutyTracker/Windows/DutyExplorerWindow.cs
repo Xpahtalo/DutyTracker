@@ -56,7 +56,7 @@ public class DutyExplorerWindow : Window, IDisposable
 
                 if (ImGui.BeginListBox("##DutyList", new Vector2(listWidth, listLength))) {
                     foreach (var duty in _dutyManager.DutyList) {
-                        if (ImGui.Selectable($"{duty.TerritoryType.PlaceName.Value.Name}##{index}", _selectedDuty == duty)) {
+                        if (ImGui.Selectable($"{duty.TerritoryType.PlaceName.Value?.Name ?? "Report This"}##{index}", _selectedDuty == duty)) {
                             _selectedDuty = _selectedDuty == duty ? null : duty;
                             _selectedRun  = null;
                         }

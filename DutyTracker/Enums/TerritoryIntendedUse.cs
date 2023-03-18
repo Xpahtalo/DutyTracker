@@ -109,4 +109,13 @@ public static class TerritoryIntendedUseExtensions
             TerritoryIntendedUse.CriterionDungeonSavage  => true,
             _                                            => false,
         };
+
+    public static AllianceType GetAllianceType(this TerritoryIntendedUse territory) =>
+        territory switch
+        {
+            TerritoryIntendedUse.RivalWings   => AllianceType.SixParty,
+            TerritoryIntendedUse.AllianceRaid => AllianceType.ThreeParty,
+            TerritoryIntendedUse.AlliancePvp  => AllianceType.ThreeParty,
+            _                                 => AllianceType.None,
+        };
 }

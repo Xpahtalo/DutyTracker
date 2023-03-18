@@ -9,7 +9,7 @@ using Lumina.Excel.GeneratedSheets;
 
 namespace DutyTracker.Services;
 
-public class CachedPartyMember
+internal class CachedPartyMember
 {
     public string   Name     { get; }
     public uint     ObjectId { get; }
@@ -39,6 +39,20 @@ internal enum PartyState
     NoGroup,
     WaitingForAlliance,
     Running,
+}
+
+public class PlayerDeathEventArgs : EventArgs
+{
+    public string   PlayerName { get; init; }
+    public uint     ObjectId   { get; init; }
+    public Alliance Alliance   { get; init; }
+
+    public PlayerDeathEventArgs(string name, uint objectId, Alliance alliance)
+    {
+        PlayerName = name;
+        ObjectId   = objectId;
+        Alliance   = alliance;
+    }
 }
 
 public sealed unsafe class PlayerCharacterState : IDisposable
@@ -76,7 +90,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     private const uint EmptyPlayerObjectId = 3758096384;
 
 
-    public delegate void PlayerDeathDelegate(string playerName, uint objectId, Alliance alliance);
+    public delegate void PlayerDeathDelegate(PlayerDeathEventArgs eventArgs);
 
     public event PlayerDeathDelegate? OnPlayerDeath;
 
@@ -127,10 +141,9 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             UpdatePartyCache(groupManager);
     }
 
-    private void DutyStarted(TerritoryType territoryType)
+    private void DutyStarted(DutyStartedEventArgs eventArgs)
     {
-        var intendedUse = (TerritoryIntendedUse)territoryType.TerritoryIntendedUse;
-        if (intendedUse.HasAlliance()) {
+        if (eventArgs.IntendedUse.HasAlliance()) {
             _allianceState = AllianceState.WaitingForData;
             _partyState    = PartyState.WaitingForAlliance;
         } else {
@@ -138,7 +151,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         }
     }
 
-    private void DutyEnded()
+    private void DutyEnded(DutyEndedEventArgs eventArgs)
     {
         _allianceState = AllianceState.NoGroup;
         _partyState    = PartyState.NoGroup;
@@ -256,9 +269,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             var alliance   = _partyCache[i]!.Alliance;
 
             PluginLog.Debug($"Party member died: {i}, {playerName}, {objectId}, {alliance}");
-            OnPlayerDeath?.Invoke(playerName,
-                                  objectId,
-                                  alliance);
+            OnPlayerDeath?.Invoke(new PlayerDeathEventArgs(playerName, objectId, alliance));
         }
 
         void AddPlayer(PartyMember* partyMember, int i)
@@ -332,9 +343,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             var alliance   = _allianceCache[i]!.Alliance;
 
             PluginLog.Debug($"Alliance member died: {i}, {playerName}, {objectId}, {alliance}");
-            OnPlayerDeath?.Invoke(playerName,
-                                  objectId,
-                                  alliance);
+            OnPlayerDeath?.Invoke(new PlayerDeathEventArgs(playerName, objectId, alliance));
         }
 
         void PlayerLeft(int i)

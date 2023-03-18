@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using DutyTracker.Enums;
 using DutyTracker.Extensions;
@@ -10,6 +12,7 @@ namespace DutyTracker.Duty_Events;
 
 public class DutyManager : IDisposable
 {
+    private readonly ChatGui              _chatGui;
     private readonly DutyEventService     _dutyEventService;
     private readonly PlayerCharacterState _playerCharacterState;
 
@@ -42,6 +45,7 @@ public class DutyManager : IDisposable
 
     public DutyManager(Configuration configuration)
     {
+        _chatGui              = Service.ChatGui;
         _dutyEventService     = Service.DutyEventService;
         _playerCharacterState = Service.PlayerCharacterState;
         _configuration        = configuration;
@@ -56,7 +60,7 @@ public class DutyManager : IDisposable
         _dutyEventService.DutyRecommenced   += StartNewRun;
         _dutyEventService.DutyEnded         += EndDuty;
     }
-    
+
     public void Dispose()
     {
         _playerCharacterState.OnPlayerDeath -= AddDeath;
@@ -66,41 +70,74 @@ public class DutyManager : IDisposable
         _dutyEventService.DutyEnded         -= EndDuty;
     }
 
-    private void StartDuty(TerritoryType territoryType)
+    private void StartDuty(DutyStartedEventArgs eventArgs)
     {
         DutyActive       = true;
         AnyDutiesStarted = true;
-        _currentDuty     = new Duty(territoryType);
+        _currentDuty     = new Duty(eventArgs.TerritoryType, eventArgs.IntendedUse.GetAllianceType());
 
         StartNewRun();
     }
 
-    private void EndDuty()
+    private void EndDuty(DutyEndedEventArgs eventArgs)
     {
         DutyActive            = false;
         _currentDuty!.EndTime = DateTime.Now;
 
-        EndRun();
+        if (eventArgs.Completed) {
+            EndRun();
+        } else {
+            if (_currentRun is not null)
+                _currentDuty.RunList.Remove(_currentRun);
+        }
 
         var dutyDuration = _currentDuty.EndTime - _currentDuty.StartTime;
 
-        Service.ChatGui.Print(InfoMessage("Time in Duty: ", $"{dutyDuration.MinutesAndSeconds()}"));
+        _chatGui.Print(InfoMessage("Time in Duty: ", $"{dutyDuration.MinutesAndSeconds()}"));
         if (_currentDuty.RunList.Count > 1 || !_configuration.SuppressEmptyValues) {
             var finalRun         = _currentDuty.RunList[^1];
             var finalRunDuration = finalRun.EndTime - finalRun.StartTime;
 
-            Service.ChatGui.Print(InfoMessage("Final Run Duration: ", $"{finalRunDuration.MinutesAndSeconds()}"));
-            Service.ChatGui.Print(InfoMessage("Wipes: ",              $"{_currentDuty.TotalWipes}"));
+            _chatGui.Print(InfoMessage("Final Run Duration: ", $"{finalRunDuration.MinutesAndSeconds()}"));
+            _chatGui.Print(InfoMessage("Wipes: ",              $"{_currentDuty.TotalWipes}"));
         }
 
-        var totalDeaths = _currentDuty.TotalDeaths;
+        var deathList = _currentDuty.AllDeaths;
+        switch (_currentDuty.AllianceType) {
+            case AllianceType.ThreeParty:
+                foreach (Alliance alliance in Enum.GetValues(typeof(Alliance))) {
+                    if (alliance is Alliance.D or Alliance.E or Alliance.F or Alliance.None)
+                        continue;
+                    var count = deathList.Count(x => x.Alliance == alliance);
+                    _chatGui.Print(InfoMessage($"{alliance} deaths: ", count.ToString(), count == 0));
+                }
 
-        if (totalDeaths > 0 || !_configuration.SuppressEmptyValues)
-            Service.ChatGui.Print(InfoMessage("Party Deaths: ", $"{totalDeaths}"));
+                break;
+            case AllianceType.SixParty:
+                foreach (Alliance alliance in Enum.GetValues(typeof(Alliance))) {
+                    if (alliance is Alliance.None)
+                        continue;
+                    var count = deathList.Count(x => x.Alliance == alliance);
+                    _chatGui.Print(InfoMessage($"{alliance} deaths: ", count.ToString(), count == 0));
+                }
+
+                break;
+            default:
+                var totalDeaths = deathList.Count;
+                if (totalDeaths > 0 || !_configuration.SuppressEmptyValues)
+                    _chatGui.Print(InfoMessage("Party Deaths: ", $"{totalDeaths}"));
+                break;
+        }
+
         DutyList.Add(_currentDuty);
     }
 
-    private void AddDeath(string playerName, uint objectId, Alliance alliance) { _currentRun?.DeathList.Add(new Death(objectId, playerName, DateTime.Now, alliance)); }
+    private void AddDeath(PlayerDeathEventArgs eventArgs)
+    {
+        _currentRun?.DeathList.Add(new Death(eventArgs.ObjectId,
+                                             eventArgs.PlayerName,
+                                             DateTime.Now, eventArgs.Alliance));
+    }
 
     private void EndRun() { _currentRun!.EndTime = DateTime.Now; }
 
@@ -110,7 +147,7 @@ public class DutyManager : IDisposable
         _currentDuty!.RunList.Add(_currentRun);
     }
 
-    private SeString InfoMessage(string label, string info)
+    private SeString InfoMessage(string label, string info, bool highlightInfo = false)
     {
         var seStringBuilder = new SeStringBuilder();
 
@@ -118,11 +155,13 @@ public class DutyManager : IDisposable
             seStringBuilder.AddUiForeground("[DutyTracker] ", 35).AddUiForegroundOff();
         }
 
-        seStringBuilder.AddUiForeground(label, 62).AddUiForegroundOff()
-                       .AddUiForeground(info, 45).AddUiForegroundOff();
+        seStringBuilder.AddUiForeground(label, 62).AddUiForegroundOff();
+        
+        if (highlightInfo)
+            seStringBuilder.AddUiGlow(info, 45).AddUiGlowOff();
+        else
+            seStringBuilder.AddUiForeground(info, 45).AddUiForegroundOff();
 
         return seStringBuilder.Build();
     }
-
-
 }
