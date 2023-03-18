@@ -11,9 +11,8 @@ public sealed class MainWindow : Window, IDisposable
 {
     private readonly DutyManager   dutyManager;
     private readonly Configuration configuration;
-    private readonly WindowSystem  windowSystem;
     
-    public MainWindow(DutyManager dutyManager, Configuration configuration, WindowSystem windowSystem) : base(
+    public MainWindow(DutyManager dutyManager, Configuration configuration) : base(
         "Duty Tracker")
     {
         this.SizeConstraints = new WindowSizeConstraints
@@ -26,7 +25,6 @@ public sealed class MainWindow : Window, IDisposable
 
         this.dutyManager   = dutyManager;
         this.configuration = configuration;
-        this.windowSystem  = windowSystem;
     }
 
     public void Dispose()
@@ -51,46 +49,39 @@ public sealed class MainWindow : Window, IDisposable
 
         var newestDuty = dutyManager.GetMostRecentDuty();
         var newestRun  = dutyManager.GetMostRecentRun();
-        
-        if (newestDuty is not null)
-        {
+
+        if (newestDuty is not null) {
             XGui.InfoText($"Start Time:",           $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
             XGui.InfoText($"Start of Current Run:", $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
-            if (dutyManager.DutyActive)
-            {
-                XGui.InfoText($"Elapsed Time:",     $"{newestDuty.Duration.MinutesAndSeconds()}");
+            if (dutyManager.DutyActive) {
+                XGui.InfoText($"Elapsed Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
                 if (newestRun is not null)
                     XGui.InfoText($"Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
-            }
-            else
-            {
-                XGui.InfoText($"Final Run Time:",  $"{newestDuty.Duration.MinutesAndSeconds()}");
+            } else {
+                XGui.InfoText($"Final Run Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
                 if (newestRun is not null)
                     XGui.InfoText($"Total Duty Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
             }
 
-            XGui.InfoText($"In Duty:",         $"{dutyManager.DutyActive}");
+            XGui.InfoText($"In Duty:",      $"{dutyManager.DutyActive}");
             XGui.InfoText($"Party Deaths:", $"{newestDuty.TotalDeaths}");
-            XGui.InfoText($"Wipes:",           $"{newestDuty.TotalWipes}");
-        }
-        else
-        {
+            XGui.InfoText($"Wipes:",        $"{newestDuty.TotalWipes}");
+        } else {
             // This only happens if no duties have been started since the plugin loaded.
             ImGui.Text("No duties");
         }
 
 
-        if (ImGui.Button("Open Explorer"))
-        {
-            windowSystem.GetWindow("Duty Explorer")!.IsOpen = true;
+        if (ImGui.Button("Open Explorer")) {
+            Service.WindowService.ToggleWindow("DutyExplorer");
         }
-
-        if (ImGui.Button("Open Debug"))
-        {
-            windowSystem.GetWindow("Debug")!.IsOpen = true;
+#if DEBUG
+        if (ImGui.Button("Open Debug")) {
+            Service.WindowService.ToggleWindow("Debug");
         }
 
         ImGui.EndTabItem();
+#endif
     }
 
     private void DisplayOptionsTab()

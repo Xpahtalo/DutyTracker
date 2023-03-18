@@ -1,7 +1,8 @@
 ﻿namespace DutyTracker.Enums;
 
-public enum AllianceType
+public enum AllianceType : byte
 {
-    ThreeParty,
-    SixParty,
+    None       = 0x00,
+    ThreeParty = 0x01,
+    SixParty   = 0x02,
 }
