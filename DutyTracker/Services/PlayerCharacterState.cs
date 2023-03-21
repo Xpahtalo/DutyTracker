@@ -5,7 +5,6 @@ using Dalamud.Logging;
 using DutyTracker.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
 
 namespace DutyTracker.Services;
 
@@ -133,12 +132,12 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
                 break;
             case AllianceState.Running:
-                UpdateCache(_allianceCache, groupManager->GetAllianceMemberByIndex, groupManager);
+                UpdateCache(_allianceCache, groupManager->GetAllianceMemberByIndex);
                 break;
         }
 
         if (_partyState == PartyState.Running)
-            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex, groupManager);
+            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex);
     }
 
     private void DutyStarted(DutyStartedEventArgs eventArgs)
@@ -235,7 +234,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
     private delegate PartyMember* GetPartyMember(int index);
     
-    private void UpdateCache(CachedPartyMember?[] cache, GetPartyMember getMember, GroupManager* groupManager)
+    private void UpdateCache(CachedPartyMember?[] cache, GetPartyMember getMember)
     {
         for (var i = 0; i < cache.Length; i++) {
             var partyMember  = getMember(i);
