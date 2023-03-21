@@ -133,12 +133,12 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
                 break;
             case AllianceState.Running:
-                UpdateAllianceCache(groupManager);
+                UpdateCache(_allianceCache, groupManager->GetAllianceMemberByIndex, groupManager);
                 break;
         }
 
         if (_partyState == PartyState.Running)
-            UpdatePartyCache(groupManager);
+            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex, groupManager);
     }
 
     private void DutyStarted(DutyStartedEventArgs eventArgs)
@@ -233,22 +233,24 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         _partyAlliance = Alliance.None;
     }
 
-    private void UpdatePartyCache(GroupManager* groupManager)
+    private delegate PartyMember* GetPartyMember(int index);
+    
+    private void UpdateCache(CachedPartyMember?[] cache, GetPartyMember getMember, GroupManager* groupManager)
     {
-        for (var i = 0; i < _partyCache.Length; i++) {
-            var partyMember  = groupManager->GetPartyMemberByIndex(i);
+        for (var i = 0; i < cache.Length; i++) {
+            var partyMember  = getMember(i);
             var playerExists = IsRealPlayer(partyMember);
 
-            if (_partyCache[i] is not null) {
+            if (cache[i] is not null) {
                 // Have to check if the player exists first, because the health check will be true if they don't.
                 // This would result in player being marked dead instead of leaving.
                 if (!playerExists) {
                     PlayerLeft(i);
                 } else {
-                    if (_partyCache[i]!.Hp != partyMember->CurrentHP) {
-                        _partyCache[i]!.Hp = partyMember->CurrentHP;
+                    if (cache[i]!.Hp != partyMember->CurrentHP) {
+                        cache[i]!.Hp = partyMember->CurrentHP;
 
-                        if (_partyCache[i]!.Hp == 0) PlayerDied(i);
+                        if (cache[i]!.Hp == 0) PlayerDied(i);
                     }
                 }
             } else {
@@ -258,101 +260,28 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
         void PlayerLeft(int i)
         {
-            PluginLog.Debug($"Player left the party. Removing {_partyCache[i]!.Name}");
-            _partyCache[i] = null;
+            PluginLog.Debug($"Player left: {i}, {cache[i]!.Name}, {cache[i]!.ObjectId}");
+            cache[i] = null;
         }
 
         void PlayerDied(int i)
         {
-            var playerName = _partyCache[i]!.Name;
-            var objectId   = _partyCache[i]!.ObjectId;
-            var alliance   = _partyCache[i]!.Alliance;
+            var playerName = cache[i]!.Name;
+            var objectId   = cache[i]!.ObjectId;
+            var alliance   = cache[i]!.Alliance;
 
-            PluginLog.Debug($"Party member died: {i}, {playerName}, {objectId}, {alliance}");
+            PluginLog.Debug($"Played died: {i}, {playerName}, {objectId}, {alliance}");
             OnPlayerDeath?.Invoke(new PlayerDeathEventArgs(playerName, objectId, alliance));
         }
 
         void AddPlayer(PartyMember* partyMember, int i)
         {
             var newPlayer = new CachedPartyMember(GetPlayerName(partyMember), partyMember->ObjectID, partyMember->CurrentHP, _partyAlliance);
-            PluginLog.Debug($"Detected new party member: {i}, {newPlayer}");
-            _partyCache[i] = newPlayer;
+            PluginLog.Debug($"Detected new player: {i}, {newPlayer}");
+            cache[i] = newPlayer;
         }
     }
-
-    private void UpdateAllianceCache(GroupManager* groupManager)
-    {
-        for (var i = 0; i < _allianceCache.Length; i++) {
-            var allianceMember = GetAllianceMember(i);
-            var playerExists   = IsRealPlayer(allianceMember);
-
-            if (_allianceCache[i] is not null) {
-                // Have to check if the player exists first, because the health check will be true if they don't.
-                // This would result in player being marked dead instead of leaving.
-                if (!playerExists) {
-                    PlayerLeft(i);
-                } else {
-                    if (_allianceCache[i]!.Hp != allianceMember->CurrentHP) {
-                        _allianceCache[i]!.Hp = allianceMember->CurrentHP;
-
-                        if (_allianceCache[i]!.Hp == 0) PlayerDied(i);
-                    }
-                }
-            } else {
-                if (playerExists) AddPlayer(allianceMember, i);
-            }
-        }
-
-        PartyMember* GetAllianceMember(int index)
-        {
-            switch (index) {
-                case < 0:
-                case > AllianceSize:
-                    throw new ArgumentOutOfRangeException();
-                case < AllianceSize / 2:
-                    return groupManager->GetAllianceMemberByIndex(index);
-                default:
-                    return GetSecondGroupManager(groupManager)->GetAllianceMemberByIndex(index % 20);
-            }
-        }
-
-        void AddPlayer(PartyMember* allianceMember, int i)
-        {
-            var newPlayer = new CachedPartyMember(GetPlayerName(allianceMember), allianceMember->ObjectID, allianceMember->CurrentHP, GetAlliance());
-            PluginLog.Debug($"Detected new alliance member: {i}, {newPlayer}");
-            _allianceCache[i] = newPlayer;
-
-            Alliance GetAlliance()
-            {
-                return (i / 8) switch
-                {
-                    < 1 => _alliance1,
-                    < 2 => _alliance2,
-                    < 3 => _alliance3,
-                    < 4 => _alliance4,
-                    < 5 => _alliance5,
-                    _   => Alliance.None,
-                };
-            }
-        }
-
-        void PlayerDied(int i)
-        {
-            var playerName = _allianceCache[i]!.Name;
-            var objectId   = _allianceCache[i]!.ObjectId;
-            var alliance   = _allianceCache[i]!.Alliance;
-
-            PluginLog.Debug($"Alliance member died: {i}, {playerName}, {objectId}, {alliance}");
-            OnPlayerDeath?.Invoke(new PlayerDeathEventArgs(playerName, objectId, alliance));
-        }
-
-        void PlayerLeft(int i)
-        {
-            PluginLog.Debug($"Player left alliance. Removing {_allianceCache[i]!.Name}");
-            _allianceCache[i] = null;
-        }
-    }
-
+    
     private static GroupManager* GetSecondGroupManager(GroupManager* firstGroupManager) { return firstGroupManager + 1; }
 
     private static string GetPlayerName(PartyMember* partyMember) { return Marshal.PtrToStringUTF8(new nint(partyMember->Name)) ?? string.Empty; }
