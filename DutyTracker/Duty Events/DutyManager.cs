@@ -34,11 +34,10 @@ public class DutyManager : IDisposable
 
     public Run? GetMostRecentRun()
     {
-        if (_currentDuty is not null)
+        if (_currentRun is not null)
             return _currentRun;
-        if (GetMostRecentDuty()?.RunList.Count > 0)
-            return GetMostRecentDuty()?.RunList[^1];
-        return null;
+        var runList = GetMostRecentDuty()?.RunList;
+        return runList?.Count > 0 ? runList[^1] : null;
     }
 
     private readonly Configuration _configuration;
@@ -81,14 +80,18 @@ public class DutyManager : IDisposable
 
     private void EndDuty(DutyEndedEventArgs eventArgs)
     {
-        DutyActive            = false;
-        _currentDuty!.EndTime = DateTime.Now;
+        DutyActive = false;
+        if (_currentDuty is null) return;
+        
+        _currentDuty.EndTime = DateTime.Now;
 
         if (eventArgs.Completed) {
             EndRun();
         } else {
-            if (_currentRun is not null)
+            if (_currentRun is not null) {
                 _currentDuty.RunList.Remove(_currentRun);
+                _currentRun = null;
+            }
         }
 
         var dutyDuration = _currentDuty.EndTime - _currentDuty.StartTime;

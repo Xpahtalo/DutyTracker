@@ -58,9 +58,9 @@ public sealed class MainWindow : Window, IDisposable
                 if (newestRun is not null)
                     XGui.InfoText($"Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
             } else {
-                XGui.InfoText($"Final Run Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
+                XGui.InfoText($"Total Duty Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
                 if (newestRun is not null)
-                    XGui.InfoText($"Total Duty Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
+                    XGui.InfoText($"Final Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
             }
 
             XGui.InfoText($"In Duty:",      $"{dutyManager.DutyActive}");
@@ -79,9 +79,9 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.Button("Open Debug")) {
             Service.WindowService.ToggleWindow("Debug");
         }
-
-        ImGui.EndTabItem();
 #endif
+     
+        ImGui.EndTabItem();
     }
 
     private void DisplayOptionsTab()

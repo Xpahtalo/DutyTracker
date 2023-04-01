@@ -25,7 +25,7 @@ public class Duty
     }
 
     public int TotalDeaths => RunList.Sum(run => run.DeathList.Count);
-    public int TotalWipes  => RunList.Count - 1;
+    public int TotalWipes  => int.Max(RunList.Count - 1, 0);
 
     public List<Death> AllDeaths
     {
