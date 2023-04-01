@@ -108,9 +108,8 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTabItem("Info"))
             return;
         
-        ImGui.TextWrapped("Currently, only the deaths of party members are tracked. This means that deaths that occur in other alliances will not be shown.");
-        ImGui.TextWrapped("Party members must also be loaded in order to be tracked, which should handle almost all cases, but there may be some that are out of my control.");
-        
+        ImGui.TextWrapped("Nothing is saved at the moment. All data is lost whenever you quit the game, so write down whatever you want to keep.");
+
         ImGui.EndTabItem();
     }
 }
