@@ -57,22 +57,23 @@ public sealed class DutyEventService : IDisposable
     }
 
     // This gets called before DutyState.DutyCompleted, so we can intercept in case the duty is abandoned instead of completed. 
-    private void OnTerritoryChanged(object? o, ushort territoryType)
-    {
-        if (_dutyStarted && _dutyState.IsDutyStarted == false)
-            EndDuty(false);
-    }
+
 
     private void OnDutyStarted(object? o, ushort territoryType)
     {
+        PluginLog.Information($"Duty Detected. TerritoryType: {territoryType}");
         var territory = _dataManager.Excel.GetSheet<TerritoryType>()?.GetRow(territoryType);
-        if (territory is null)
+        if (territory is null) {
+            PluginLog.Warning("Could not load territory sheet.");
             return;
+        }
+        PluginLog.Information($"IntendedUse: {territory.TerritoryIntendedUse}, Name: {territory.Name ?? "No Name"}, PlaceName: {territory.PlaceName.Value?.Name?? "No Name"}" );
+        
+        
         if (!((TerritoryIntendedUse)territory.TerritoryIntendedUse).ShouldTrack())
             return;
 
         _dutyStarted = true;
-        PluginLog.Verbose($"Duty Started: {territory.Name ?? "No Name"}");
         DutyStarted?.Invoke(new DutyStartedEventArgs(territory!));
     }
 
@@ -90,10 +91,20 @@ public sealed class DutyEventService : IDisposable
 
     private void OnDutyEnded(object? o, ushort territory)
     {
-        if (_dutyStarted)
+        if (_dutyStarted) {
+            PluginLog.Debug("Detected end of duty via DutyState.DutyCompleted");
             EndDuty(true);
+        }
     }
-
+    
+    private void OnTerritoryChanged(object? o, ushort territoryType)
+    {
+        if (_dutyStarted && _dutyState.IsDutyStarted == false) {
+            PluginLog.Debug("Detected end of duty via ClientState.TerritoryChanged");
+            EndDuty(false);
+        }
+    }
+    
     private void EndDuty(bool completed)
     {
         PluginLog.Verbose($"Duty Ended. Completed: {completed}");
