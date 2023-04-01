@@ -56,9 +56,6 @@ public sealed class DutyEventService : IDisposable
         _clientState.TerritoryChanged += OnTerritoryChanged;
     }
 
-    // This gets called before DutyState.DutyCompleted, so we can intercept in case the duty is abandoned instead of completed. 
-
-
     private void OnDutyStarted(object? o, ushort territoryType)
     {
         PluginLog.Information($"Duty Detected. TerritoryType: {territoryType}");
@@ -97,6 +94,7 @@ public sealed class DutyEventService : IDisposable
         }
     }
     
+    // This gets called before DutyState.DutyCompleted, so we can intercept in case the duty is abandoned instead of completed. 
     private void OnTerritoryChanged(object? o, ushort territoryType)
     {
         if (_dutyStarted && _dutyState.IsDutyStarted == false) {
