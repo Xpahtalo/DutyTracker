@@ -9,8 +9,8 @@ namespace DutyTracker.Windows;
 
 public sealed class MainWindow : Window, IDisposable
 {
-    private readonly DutyManager   dutyManager;
-    private readonly Configuration configuration;
+    private readonly DutyManager   _dutyManager;
+    private readonly Configuration _configuration;
     
     public MainWindow(DutyManager dutyManager, Configuration configuration) : base(
         "Duty Tracker")
@@ -23,8 +23,8 @@ public sealed class MainWindow : Window, IDisposable
 
         Flags = ImGuiWindowFlags.NoResize;
 
-        this.dutyManager   = dutyManager;
-        this.configuration = configuration;
+        _dutyManager   = dutyManager;
+        _configuration = configuration;
     }
 
     public void Dispose()
@@ -47,13 +47,13 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTabItem("Status"))
             return;
 
-        var newestDuty = dutyManager.GetMostRecentDuty();
-        var newestRun  = dutyManager.GetMostRecentRun();
+        var newestDuty = _dutyManager.GetMostRecentDuty();
+        var newestRun  = _dutyManager.GetMostRecentRun();
 
         if (newestDuty is not null) {
             XGui.InfoText($"Start Time:",           $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
             XGui.InfoText($"Start of Current Run:", $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
-            if (dutyManager.DutyActive) {
+            if (_dutyManager.DutyActive) {
                 XGui.InfoText($"Elapsed Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
                 if (newestRun is not null)
                     XGui.InfoText($"Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
@@ -63,7 +63,7 @@ public sealed class MainWindow : Window, IDisposable
                     XGui.InfoText($"Final Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
             }
 
-            XGui.InfoText($"In Duty:",      $"{dutyManager.DutyActive}");
+            XGui.InfoText($"In Duty:",      $"{_dutyManager.DutyActive}");
             XGui.InfoText($"Party Deaths:", $"{newestDuty.TotalDeaths}");
             XGui.InfoText($"Wipes:",        $"{newestDuty.TotalWipes}");
         } else {
@@ -89,16 +89,16 @@ public sealed class MainWindow : Window, IDisposable
         if (!ImGui.BeginTabItem("Options"))
             return;
 
-        var includeDutyTrackerLabel = configuration.IncludeDutyTrackerLabel;
+        var includeDutyTrackerLabel = _configuration.IncludeDutyTrackerLabel;
         if (ImGui.Checkbox("Include [DutyTracker] label", ref includeDutyTrackerLabel))
-            configuration.IncludeDutyTrackerLabel = includeDutyTrackerLabel;
+            _configuration.IncludeDutyTrackerLabel = includeDutyTrackerLabel;
         
-        var suppressEmptyValues = configuration.SuppressEmptyValues;
+        var suppressEmptyValues = _configuration.SuppressEmptyValues;
         if (ImGui.Checkbox("Suppress values that are zero", ref suppressEmptyValues))
-            configuration.SuppressEmptyValues = suppressEmptyValues;
+            _configuration.SuppressEmptyValues = suppressEmptyValues;
         
         if(ImGui.Button("Save"))
-            configuration.Save();
+            _configuration.Save();
         
         ImGui.EndTabItem();
     }
