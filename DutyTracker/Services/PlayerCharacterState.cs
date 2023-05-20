@@ -117,7 +117,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
     private void FrameworkUpdate(Framework framework)
     {
-        var groupManager  = GroupManager.Instance();
+        var groupManager = GroupManager.Instance();
 
         switch (_allianceState) {
             case AllianceState.WaitingForData:
@@ -132,12 +132,40 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
                 break;
             case AllianceState.Running:
-                UpdateCache(_allianceCache, groupManager->GetAllianceMemberByIndex);
+                UpdateCache(_allianceCache, groupManager->GetAllianceMemberByIndex, index =>
+                {
+                    switch (_allianceType) {
+                        case AllianceType.None:
+                            PluginLog.Debug("  No alliance.");
+                            return Alliance.None;
+                        case AllianceType.ThreeParty:
+                            PluginLog.Debug($"  Index = {index}, Alliance = {index / 8}");
+                            return (index / 8) switch
+                            {
+                                0 => _alliance1,
+                                1 => _alliance2,
+                                _ => Alliance.None,
+                            };
+                        case AllianceType.SixParty:
+                            PluginLog.Debug($"  Index = {index}, Alliance = {index / 4}");
+                            return (index / 4) switch
+                            {
+                                0 => _alliance1,
+                                1 => _alliance2,
+                                2 => _alliance3,
+                                3 => _alliance4,
+                                4 => _alliance5,
+                                _ => Alliance.None,
+                            };
+                        default:
+                            throw new ArgumentOutOfRangeException("");
+                    }
+                });
                 break;
         }
 
         if (_partyState == PartyState.Running)
-            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex);
+            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex, (_ => _partyAlliance));
     }
 
     private void DutyStarted(DutyStartedEventArgs eventArgs)
@@ -172,7 +200,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         var stringArray =
             FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
                 ->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
-        PluginLog.Debug("Three Party Strings");
+        PluginLog.Debug("Party Strings");
         PluginLog.Debug($"  string{Party1Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party1Position]))}");
         PluginLog.Debug($"  string{Party2Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party2Position]))}");
         PluginLog.Debug($"  string{Party3Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party3Position]))}");
@@ -198,8 +226,8 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             },
             AllianceType.SixParty => (alliance1: _alliance1, alliance2: _alliance2, alliance3: _alliance3, alliance4: _alliance4, alliance5: _alliance5) switch
             {
-                (Alliance.A, Alliance.B, Alliance.C, Alliance.C, Alliance.E) => Alliance.F,
-                (Alliance.A, Alliance.B, Alliance.C, Alliance.C, Alliance.F) => Alliance.E,
+                (Alliance.A, Alliance.B, Alliance.C, Alliance.D, Alliance.E) => Alliance.F,
+                (Alliance.A, Alliance.B, Alliance.C, Alliance.D, Alliance.F) => Alliance.E,
                 (Alliance.A, Alliance.B, Alliance.C, Alliance.E, Alliance.F) => Alliance.D,
                 (Alliance.A, Alliance.B, Alliance.D, Alliance.E, Alliance.F) => Alliance.C,
                 (Alliance.A, Alliance.C, Alliance.D, Alliance.E, Alliance.F) => Alliance.B,
@@ -232,9 +260,15 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         _partyAlliance = Alliance.None;
     }
 
-    private delegate PartyMember* GetPartyMember(int index);
     
-    private void UpdateCache(CachedPartyMember?[] cache, GetPartyMember getMember)
+    // This is a bit messy, but passing in the array and access functions lets me keep the actual logic the exact same 
+    // between party and alliance members, while still tracking them separately. It was especially difficult to work
+    // with when doing it separately due to code duplication with slight differences.
+    private delegate PartyMember* GetPartyMember(int index);
+
+    private delegate Alliance GetAlliance(int index);
+    
+    private void UpdateCache(CachedPartyMember?[] cache, GetPartyMember getMember, GetAlliance getAlliance)
     {
         for (var i = 0; i < cache.Length; i++) {
             var partyMember  = getMember(i);
@@ -253,7 +287,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                     }
                 }
             } else {
-                if (playerExists) AddPlayer(partyMember, i);
+                if (playerExists) AddPlayer(partyMember, getAlliance(i), i);
             }
         }
 
@@ -273,9 +307,9 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             OnPlayerDeath?.Invoke(new PlayerDeathEventArgs(playerName, objectId, alliance));
         }
 
-        void AddPlayer(PartyMember* partyMember, int i)
+        void AddPlayer(PartyMember* partyMember, Alliance alliance, int i)
         {
-            var newPlayer = new CachedPartyMember(GetPlayerName(partyMember), partyMember->ObjectID, partyMember->CurrentHP, _partyAlliance);
+            var newPlayer = new CachedPartyMember(GetPlayerName(partyMember), partyMember->ObjectID, partyMember->CurrentHP, alliance);
             PluginLog.Debug($"Detected new player: {i}, {newPlayer}");
             cache[i] = newPlayer;
         }
@@ -405,6 +439,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
     public void DebugCache()
     {
+        ImGui.Text($"Party Alliance = {_partyAlliance}");
         ImGui.Text($"Alliance1 = {_alliance1}");
         ImGui.Text($"Alliance2 = {_alliance2}");
         ImGui.Text($"Alliance3 = {_alliance3}");

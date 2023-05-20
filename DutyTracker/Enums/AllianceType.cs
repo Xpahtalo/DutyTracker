@@ -1,8 +1,11 @@
-﻿namespace DutyTracker.Enums;
+﻿using System;
 
+namespace DutyTracker.Enums;
+
+[Flags]
 public enum AllianceType : byte
 {
-    None       = 0x00,
-    ThreeParty = 0x01,
-    SixParty   = 0x02,
+    None       = 0,
+    ThreeParty = 1,
+    SixParty   = 3,
 }

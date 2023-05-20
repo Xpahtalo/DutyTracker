@@ -64,7 +64,7 @@ public sealed class MainWindow : Window, IDisposable
             }
 
             XGui.InfoText($"In Duty:",      $"{_dutyManager.DutyActive}");
-            XGui.InfoText($"Party Deaths:", $"{newestDuty.TotalDeaths}");
+            XGui.InfoText($"Deaths:", $"{newestDuty.TotalDeaths}");
             XGui.InfoText($"Wipes:",        $"{newestDuty.TotalWipes}");
         } else {
             // This only happens if no duties have been started since the plugin loaded.
