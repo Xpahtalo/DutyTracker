@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Dalamud.Game;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using ImGuiNET;
@@ -56,7 +56,7 @@ public class PlayerDeathEventArgs : EventArgs
 
 public sealed unsafe class PlayerCharacterState : IDisposable
 {
-    private readonly Framework            _framework;
+    private readonly IFramework            _framework;
     private readonly DutyEventService     _dutyEventService;
     private readonly CachedPartyMember?[] _partyCache;
     private readonly CachedPartyMember?[] _allianceCache;
@@ -115,7 +115,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         _dutyEventService.DutyEnded   -= DutyEnded;
     }
 
-    private void FrameworkUpdate(Framework framework)
+    private void FrameworkUpdate(IFramework framework)
     {
         var groupManager = GroupManager.Instance();
 

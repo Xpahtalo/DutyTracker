@@ -1,8 +1,6 @@
 ﻿using System;
-using Dalamud.Data;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.DutyState;
 using Dalamud.Logging;
+using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using Lumina.Excel.GeneratedSheets;
 
@@ -28,9 +26,9 @@ public sealed class DutyEventService : IDisposable
 {
     private bool _dutyStarted;
     
-    private readonly DutyState   _dutyState;
-    private readonly DataManager _dataManager;
-    private readonly ClientState _clientState;
+    private readonly IDutyState   _dutyState;
+    private readonly IDataManager _dataManager;
+    private readonly IClientState _clientState;
 
     public delegate void DutyStartedDelegate(DutyStartedEventArgs eventArgs);
     public delegate void DutyWipedDelegate();
@@ -95,7 +93,7 @@ public sealed class DutyEventService : IDisposable
     }
     
     // This gets called before DutyState.DutyCompleted, so we can intercept in case the duty is abandoned instead of completed. 
-    private void OnTerritoryChanged(object? o, ushort territoryType)
+    private void OnTerritoryChanged(ushort territoryType)
     {
         if (_dutyStarted && _dutyState.IsDutyStarted == false) {
             PluginLog.Debug("Detected end of duty via ClientState.TerritoryChanged");

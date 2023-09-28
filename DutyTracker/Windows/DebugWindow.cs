@@ -1,19 +1,17 @@
 ﻿using System;
-using Dalamud.Data;
-using Dalamud.Game.ClientState;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using DutyTracker.Services;
 using ImGuiNET;
-using Lumina;
 using Lumina.Excel.GeneratedSheets;
 
 namespace DutyTracker.Windows;
 
 public class DebugWindow : Window, IDisposable
 {
-    private readonly ClientState          _clientState;
-    private readonly DataManager             _dataManager;
+    private readonly IClientState          _clientState;
+    private readonly IDataManager             _dataManager;
     private readonly PlayerCharacterState _playerCharacterState;
 
     public DebugWindow()

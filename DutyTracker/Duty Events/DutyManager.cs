@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using DutyTracker.Extensions;
 using DutyTracker.Services;
-using Lumina.Excel.GeneratedSheets;
 
 namespace DutyTracker.Duty_Events;
 
 public class DutyManager : IDisposable
 {
-    private readonly ChatGui              _chatGui;
+    private readonly IChatGui              _chatGui;
     private readonly DutyEventService     _dutyEventService;
     private readonly PlayerCharacterState _playerCharacterState;
 

@@ -1,6 +1,7 @@
 ﻿using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using DutyTracker.Duty_Events;
 using DutyTracker.Services;
 using DutyTracker.Windows;
@@ -15,7 +16,7 @@ public sealed class DutyTracker : IDalamudPlugin
     private const string CommandName = "/dt";
 
     private         DalamudPluginInterface PluginInterface { get; init; }
-    private         CommandManager         CommandManager  { get; init; }
+    private         ICommandManager         CommandManager  { get; init; }
 
     public          Configuration          Configuration   { get; init; }
     public readonly DutyManager            DutyManager;
@@ -23,7 +24,7 @@ public sealed class DutyTracker : IDalamudPlugin
 
     public DutyTracker(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] CommandManager         commandManager)
+        [RequiredVersion("1.0")] ICommandManager         commandManager)
     {
         PluginInterface = pluginInterface;
         CommandManager  = commandManager;

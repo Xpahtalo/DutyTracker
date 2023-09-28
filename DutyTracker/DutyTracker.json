@@ -5,7 +5,5 @@
   "Description": "Track some duty info. /dt open the menu",
   "InternalName": "DutyTracker",
   "ApplicableVersion": "any",
-  "Tags": [
-    
-  ]
+  "Tags": []
 }
