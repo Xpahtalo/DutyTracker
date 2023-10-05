@@ -124,6 +124,7 @@ public class DutyManager : IDisposable
                 }
 
                 break;
+            case AllianceType.None:
             default:
                 var totalDeaths = deathList.Count;
                 if (totalDeaths > 0 || !_configuration.SuppressEmptyValues)
