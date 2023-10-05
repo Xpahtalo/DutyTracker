@@ -56,13 +56,13 @@ public sealed class DutyEventService : IDisposable
 
     private void OnDutyStarted(object? o, ushort territoryType)
     {
-        PluginLog.Information($"Duty Detected. TerritoryType: {territoryType}");
+        Service.PluginLog.Information($"Duty Detected. TerritoryType: {territoryType}");
         var territory = _dataManager.Excel.GetSheet<TerritoryType>()?.GetRow(territoryType);
         if (territory is null) {
-            PluginLog.Warning("Could not load territory sheet.");
+            Service.PluginLog.Warning("Could not load territory sheet.");
             return;
         }
-        PluginLog.Information($"IntendedUse: {territory.TerritoryIntendedUse}, Name: {territory.Name ?? "No Name"}, PlaceName: {territory.PlaceName.Value?.Name?? "No Name"}" );
+        Service.PluginLog.Information($"IntendedUse: {territory.TerritoryIntendedUse}, Name: {territory.Name ?? "No Name"}, PlaceName: {territory.PlaceName.Value?.Name?? "No Name"}" );
         
         
         if (!((TerritoryIntendedUse)territory.TerritoryIntendedUse).ShouldTrack())
@@ -74,20 +74,20 @@ public sealed class DutyEventService : IDisposable
 
     private void OnDutyWiped(object? o, ushort territory)
     {
-        PluginLog.Verbose("Duty Wipe");
+        Service.PluginLog.Verbose("Duty Wipe");
         DutyWiped?.Invoke();
     }
 
     private void OnDutyRecommenced(object? o, ushort territory)
     {
-        PluginLog.Verbose("Duty Recommenced");
+        Service.PluginLog.Verbose("Duty Recommenced");
         DutyRecommenced?.Invoke();
     }
 
     private void OnDutyEnded(object? o, ushort territory)
     {
         if (_dutyStarted) {
-            PluginLog.Debug("Detected end of duty via DutyState.DutyCompleted");
+            Service.PluginLog.Debug("Detected end of duty via DutyState.DutyCompleted");
             EndDuty(true);
         }
     }
@@ -96,14 +96,14 @@ public sealed class DutyEventService : IDisposable
     private void OnTerritoryChanged(ushort territoryType)
     {
         if (_dutyStarted && _dutyState.IsDutyStarted == false) {
-            PluginLog.Debug("Detected end of duty via ClientState.TerritoryChanged");
+            Service.PluginLog.Debug("Detected end of duty via ClientState.TerritoryChanged");
             EndDuty(false);
         }
     }
     
     private void EndDuty(bool completed)
     {
-        PluginLog.Verbose($"Duty Ended. Completed: {completed}");
+        Service.PluginLog.Verbose($"Duty Ended. Completed: {completed}");
         _dutyStarted = false;
         DutyEnded?.Invoke(new DutyEndedEventArgs(completed));
     }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using Dalamud.Logging;
 using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
@@ -105,7 +104,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         _framework.Update             += FrameworkUpdate;
         _dutyEventService.DutyStarted += DutyStarted;
         _dutyEventService.DutyEnded   += DutyEnded;
-        PluginLog.Debug("PlayerCharacterState initialized.");
+        Service.PluginLog.Debug("PlayerCharacterState initialized.");
     }
 
     public void Dispose()
@@ -127,7 +126,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                     SetAlliances(groupManager);
                     _allianceState = AllianceState.Running;
                     _partyState    = PartyState.Running;
-                    PluginLog.Debug("Alliance data detected. Changing state to Running.");
+                    Service.PluginLog.Debug("Alliance data detected. Changing state to Running.");
                 }
 
                 break;
@@ -136,10 +135,10 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                 {
                     switch (_allianceType) {
                         case AllianceType.None:
-                            PluginLog.Debug("  No alliance.");
+                            Service.PluginLog.Debug("  No alliance.");
                             return Alliance.None;
                         case AllianceType.ThreeParty:
-                            PluginLog.Debug($"  Index = {index}, Alliance = {index / 8}");
+                            Service.PluginLog.Debug($"  Index = {index}, Alliance = {index / 8}");
                             return (index / 8) switch
                             {
                                 0 => _alliance1,
@@ -147,7 +146,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                                 _ => Alliance.None,
                             };
                         case AllianceType.SixParty:
-                            PluginLog.Debug($"  Index = {index}, Alliance = {index / 4}");
+                            Service.PluginLog.Debug($"  Index = {index}, Alliance = {index / 4}");
                             return (index / 4) switch
                             {
                                 0 => _alliance1,
@@ -200,12 +199,12 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         var stringArray =
             FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
                 ->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
-        PluginLog.Debug("Party Strings");
-        PluginLog.Debug($"  string{Party1Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party1Position]))}");
-        PluginLog.Debug($"  string{Party2Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party2Position]))}");
-        PluginLog.Debug($"  string{Party3Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party3Position]))}");
-        PluginLog.Debug($"  string{Party4Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party4Position]))}");
-        PluginLog.Debug($"  string{Party5Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party5Position]))}");
+        Service.PluginLog.Debug("Party Strings");
+        Service.PluginLog.Debug($"  string{Party1Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party1Position]))}");
+        Service.PluginLog.Debug($"  string{Party2Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party2Position]))}");
+        Service.PluginLog.Debug($"  string{Party3Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party3Position]))}");
+        Service.PluginLog.Debug($"  string{Party4Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party4Position]))}");
+        Service.PluginLog.Debug($"  string{Party5Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party5Position]))}");
 
         _alliance1 = AllianceExtensions.ToAlliance(stringArray[Party1Position]);
         _alliance2 = AllianceExtensions.ToAlliance(stringArray[Party2Position]);
@@ -237,9 +236,9 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             _ => Alliance.None,
         };
 
-        PluginLog.Verbose($"Alliance Type: {_allianceType}");
-        PluginLog.Verbose($"Party Alliance: {_partyAlliance}");
-        PluginLog.Verbose($"Alliance Parties: {_alliance1}, {_alliance2}, {_alliance3}, {_alliance4}, {_alliance5}");
+        Service.PluginLog.Verbose($"Alliance Type: {_allianceType}");
+        Service.PluginLog.Verbose($"Party Alliance: {_partyAlliance}");
+        Service.PluginLog.Verbose($"Alliance Parties: {_alliance1}, {_alliance2}, {_alliance3}, {_alliance4}, {_alliance5}");
     }
 
     private void ResetAllianceInfo()
@@ -293,7 +292,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
         void PlayerLeft(int i)
         {
-            PluginLog.Debug($"Player left: {i}, {cache[i]!.Name}, {cache[i]!.ObjectId}");
+            Service.PluginLog.Debug($"Player left: {i}, {cache[i]!.Name}, {cache[i]!.ObjectId}");
             cache[i] = null;
         }
 
@@ -303,14 +302,14 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             var objectId   = cache[i]!.ObjectId;
             var alliance   = cache[i]!.Alliance;
 
-            PluginLog.Debug($"Played died: {i}, {playerName}, {objectId}, {alliance}");
+            Service.PluginLog.Debug($"Played died: {i}, {playerName}, {objectId}, {alliance}");
             OnPlayerDeath?.Invoke(new PlayerDeathEventArgs(playerName, objectId, alliance));
         }
 
         void AddPlayer(PartyMember* partyMember, Alliance alliance, int i)
         {
             var newPlayer = new CachedPartyMember(GetPlayerName(partyMember), partyMember->ObjectID, partyMember->CurrentHP, alliance);
-            PluginLog.Debug($"Detected new player: {i}, {newPlayer}");
+            Service.PluginLog.Debug($"Detected new player: {i}, {newPlayer}");
             cache[i] = newPlayer;
         }
     }
@@ -408,7 +407,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                         try {
                             DebugPartyMemberRow(allianceMember, i);
                         } catch (Exception ex) {
-                            PluginLog.LogError($"{ex}");
+                            Service.PluginLog.Error($"{ex}");
                             XGui.TableRow($"{i}",
                                           "error",
                                           "error",

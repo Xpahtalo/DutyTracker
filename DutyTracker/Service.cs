@@ -20,6 +20,7 @@ public class Service
     [PluginService] public static IObjectTable            ObjectTable     { get; private set; }
     [PluginService] public static IGameGui                GameGui         { get; private set; }
     [PluginService] public static IDutyState              DutyState       { get; private set; }
+    [PluginService] public static IPluginLog              PluginLog       { get; private set; }
 
     internal static DutyEventService     DutyEventService;
     internal static PlayerCharacterState PlayerCharacterState;
