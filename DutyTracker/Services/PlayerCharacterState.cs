@@ -76,7 +76,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     //private readonly int allianceNumberArraySize = 296;
     //private readonly int allianceStringArraySize = 45;
 
-    private const int AllianceStringPosition = 63;
+    private const int AllianceStringPosition = 64;
     private const int Party1Position         = 0;
     private const int Party2Position         = 9;
     private const int Party3Position         = 18;
@@ -189,7 +189,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     {
         var stringArray =
             FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
-                ->AtkModule.AtkArrayDataHolder.StringArrays[63]->StringArray;
+                ->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
 
         return !string.IsNullOrWhiteSpace(Marshal.PtrToStringUTF8(new nint(stringArray[0])));
     }
