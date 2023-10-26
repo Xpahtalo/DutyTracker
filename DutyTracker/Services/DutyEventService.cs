@@ -52,8 +52,18 @@ public sealed class DutyEventService : IDisposable
         _dutyState.DutyRecommenced    += OnDutyRecommenced;
         _dutyState.DutyCompleted      += OnDutyEnded;
         _clientState.TerritoryChanged += OnTerritoryChanged;
+        
     }
 
+    
+#if DEBUG
+    public void Debug()
+    {
+        if (_dutyState.IsDutyStarted)
+            DutyStarted?.Invoke(new DutyStartedEventArgs(_dataManager.Excel.GetSheet<TerritoryType>()?.GetRow(_clientState.TerritoryType)!));
+    }
+#endif
+    
     private void OnDutyStarted(object? o, ushort territoryType)
     {
         Service.PluginLog.Information($"Duty Detected. TerritoryType: {territoryType}");

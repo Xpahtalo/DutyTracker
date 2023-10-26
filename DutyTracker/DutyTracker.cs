@@ -20,11 +20,11 @@ public sealed class DutyTracker : IDalamudPlugin
 
     public          Configuration          Configuration   { get; init; }
     public readonly DutyManager            DutyManager;
-    
+
 
     public DutyTracker(
         [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] ICommandManager         commandManager)
+        [RequiredVersion("1.0")] ICommandManager        commandManager)
     {
         PluginInterface = pluginInterface;
         CommandManager  = commandManager;
@@ -33,23 +33,27 @@ public sealed class DutyTracker : IDalamudPlugin
         Service.DutyEventService     = new DutyEventService();
         Service.PlayerCharacterState = new PlayerCharacterState();
         Service.WindowService        = new WindowService();
-        
+
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
         Configuration.Initialize(PluginInterface);
-        
-        DutyManager        = PluginInterface.Create<DutyManager>(Configuration)!;
 
-        Service.WindowService.AddWindow("MainWindow", new MainWindow(DutyManager, Configuration));
+        DutyManager = PluginInterface.Create<DutyManager>(Configuration)!;
+
+        Service.WindowService.AddWindow("MainWindow",   new MainWindow(DutyManager, Configuration));
         Service.WindowService.AddWindow("DutyExplorer", new DutyExplorerWindow(DutyManager));
-        Service.WindowService.AddWindow("Debug", new DebugWindow());
+        Service.WindowService.AddWindow("Debug",        new DebugWindow());
 
         CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
-                                                    {
-                                                        HelpMessage = "Open the Duty Tracker menu",
-                                                    });
+        {
+            HelpMessage = "Open the Duty Tracker menu",
+        });
 
-        PluginInterface.UiBuilder.Draw    += DrawUi;
+        PluginInterface.UiBuilder.Draw         += DrawUi;
         PluginInterface.UiBuilder.OpenConfigUi += OpenSettings;
+
+#if DEBUG
+        // Service.DutyEventService.Debug();
+#endif
     }
 
     public void Dispose()
