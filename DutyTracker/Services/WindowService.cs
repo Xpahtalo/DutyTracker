@@ -33,13 +33,7 @@ public sealed class WindowService : IDisposable
             window.IsOpen = !window.IsOpen;
     }
 
-    public void Draw()
-    {
-        windowSystem.Draw();
-    }
+    public void Draw() { windowSystem.Draw(); }
 
-    public void Dispose()
-    {
-        windowSystem.RemoveAllWindows();
-    }
+    public void Dispose() { windowSystem.RemoveAllWindows(); }
 }

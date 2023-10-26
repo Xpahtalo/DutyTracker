@@ -11,15 +11,17 @@ namespace DutyTracker.Duty_Events;
 
 public class DutyManager : IDisposable
 {
-    private readonly IChatGui              _chatGui;
+    private readonly IChatGui             _chatGui;
     private readonly DutyEventService     _dutyEventService;
     private readonly PlayerCharacterState _playerCharacterState;
 
     private Duty? _currentDuty;
     private Run?  _currentRun;
 
+    private readonly Configuration _configuration;
+
     public bool       DutyActive       { get; private set; }
-    public List<Duty> DutyList         { get; private set; }
+    public List<Duty> DutyList         { get; }
     public bool       AnyDutiesStarted { get; private set; }
 
     public Duty? GetMostRecentDuty()
@@ -38,8 +40,6 @@ public class DutyManager : IDisposable
         var runList = GetMostRecentDuty()?.RunList;
         return runList?.Count > 0 ? runList[^1] : null;
     }
-
-    private readonly Configuration _configuration;
 
     public DutyManager(Configuration configuration)
     {
@@ -81,7 +81,7 @@ public class DutyManager : IDisposable
     {
         DutyActive = false;
         if (_currentDuty is null) return;
-        
+
         _currentDuty.EndTime = DateTime.Now;
 
         if (eventArgs.Completed) {
@@ -154,12 +154,10 @@ public class DutyManager : IDisposable
     {
         var seStringBuilder = new SeStringBuilder();
 
-        if (_configuration.IncludeDutyTrackerLabel) {
-            seStringBuilder.AddUiForeground("[DutyTracker] ", 35).AddUiForegroundOff();
-        }
+        if (_configuration.IncludeDutyTrackerLabel) seStringBuilder.AddUiForeground("[DutyTracker] ", 35).AddUiForegroundOff();
 
         seStringBuilder.AddUiForeground(label, 62).AddUiForegroundOff();
-        
+
         if (highlightInfo)
             seStringBuilder.AddUiGlow(info, 45).AddUiGlowOff();
         else

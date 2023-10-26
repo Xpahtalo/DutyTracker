@@ -10,8 +10,8 @@ namespace DutyTracker.Windows;
 
 public class DebugWindow : Window, IDisposable
 {
-    private readonly IClientState          _clientState;
-    private readonly IDataManager             _dataManager;
+    private readonly IClientState         _clientState;
+    private readonly IDataManager         _dataManager;
     private readonly PlayerCharacterState _playerCharacterState;
 
     public DebugWindow()

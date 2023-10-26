@@ -13,15 +13,14 @@ internal static class TimeSpanExtensions
         if (timeSpan.Seconds < 10)
             stringBuilder.Append('0');
         stringBuilder.Append(timeSpan.Seconds);
-        
+
         return stringBuilder.ToString();
     }
 
     public static string HoursMinutesAndSeconds(this TimeSpan timeSpan)
     {
         var stringBuilder = new StringBuilder();
-        if (timeSpan.TotalHours > 1)
-        {
+        if (timeSpan.TotalHours > 1) {
             stringBuilder.Append(Math.Floor(timeSpan.TotalHours));
             stringBuilder.Append(':');
         }
@@ -33,7 +32,7 @@ internal static class TimeSpanExtensions
         if (timeSpan.Seconds < 10)
             stringBuilder.Append('0');
         stringBuilder.Append(timeSpan.Seconds);
-        
+
         return stringBuilder.ToString();
     }
 }

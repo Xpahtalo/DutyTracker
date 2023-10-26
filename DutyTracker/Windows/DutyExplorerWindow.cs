@@ -22,13 +22,12 @@ public class DutyExplorerWindow : Window, IDisposable
         : base("Duty Explorer")
     {
         SizeConstraints = new WindowSizeConstraints
-                          {
-                              MinimumSize = new Vector2(820,            330),
-                              MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
-                          };
+        {
+            MinimumSize = new Vector2(820,            330),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
+        };
 
-        this._dutyManager = dutyManager;
-
+        _dutyManager = dutyManager;
     }
 
     public void Dispose() { }
@@ -52,9 +51,9 @@ public class DutyExplorerWindow : Window, IDisposable
         if (ImGui.BeginChild("##Duties", size, true)) {
             if (_dutyManager.AnyDutiesStarted) {
                 var listWidth  = ImGui.GetContentRegionAvail().X;
-                var listLength = (ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing()) * ImGui.GetTextLineHeightWithSpacing();
+                var listLength = ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing() * ImGui.GetTextLineHeightWithSpacing();
 
-                if (ImGui.BeginListBox("##DutyList", new Vector2(listWidth, listLength))) {
+                if (ImGui.BeginListBox("##DutyList", new Vector2(listWidth, listLength)))
                     foreach (var duty in _dutyManager.DutyList) {
                         if (ImGui.Selectable($"{duty.TerritoryType.PlaceName.Value?.Name ?? "Report This"}##{index}", _selectedDuty == duty)) {
                             _selectedDuty = _selectedDuty == duty ? null : duty;
@@ -63,7 +62,6 @@ public class DutyExplorerWindow : Window, IDisposable
 
                         index++;
                     }
-                }
 
                 ImGui.EndListBox();
             } else {
@@ -80,22 +78,20 @@ public class DutyExplorerWindow : Window, IDisposable
             if (duty is not null) {
                 var averageDeaths = duty.TotalWipes == 0 ? 0 : duty.TotalDeaths / duty.TotalWipes;
                 XGui.InfoText("Duty Start Time:", $"{duty.StartTime:hh\\:mm\\:ss tt}",         InfoWidth);
-                XGui.InfoText($"Duty End Time:",  $"{duty.EndTime:hh\\:mm\\:ss tt}",           InfoWidth);
-                XGui.InfoText($"Duty Duration:",  $"{duty.Duration.HoursMinutesAndSeconds()}", InfoWidth);
-                XGui.InfoText($"Wipes:",          $"{duty.TotalWipes}",                        InfoWidth);
-                XGui.InfoText($"Deaths:",         $"{duty.TotalDeaths}",                       InfoWidth);
-                XGui.InfoText($"Average Deaths:", $"{averageDeaths}",                          InfoWidth);
+                XGui.InfoText("Duty End Time:",   $"{duty.EndTime:hh\\:mm\\:ss tt}",           InfoWidth);
+                XGui.InfoText("Duty Duration:",   $"{duty.Duration.HoursMinutesAndSeconds()}", InfoWidth);
+                XGui.InfoText("Wipes:",           $"{duty.TotalWipes}",                        InfoWidth);
+                XGui.InfoText("Deaths:",          $"{duty.TotalDeaths}",                       InfoWidth);
+                XGui.InfoText("Average Deaths:",  $"{averageDeaths}",                          InfoWidth);
 
                 var listWidth  = ImGui.GetContentRegionAvail().X;
-                var listLength = (ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing()) * ImGui.GetTextLineHeightWithSpacing();
+                var listLength = ImGui.GetContentRegionAvail().Y / ImGui.GetTextLineHeightWithSpacing() * ImGui.GetTextLineHeightWithSpacing();
 
                 if (ImGui.BeginListBox("##RunList", new Vector2(listWidth, listLength))) {
                     var index = 1;
-                    foreach (var run in duty.RunList) {
-                        if (ImGui.Selectable($"{index++} - {run.StartTime:hh\\:mm\\:ss tt}", _selectedRun == run)) {
-                            _selectedRun = _selectedRun == run ? null : run;
-                        }
-                    }
+                    foreach (var run in duty.RunList)
+                        if (ImGui.Selectable($"{index++} - {run.StartTime:hh\\:mm\\:ss tt}", _selectedRun == run))
+                            _selectedRun = _selectedRun                                                   == run ? null : run;
                 }
 
                 ImGui.EndListBox();
@@ -120,9 +116,7 @@ public class DutyExplorerWindow : Window, IDisposable
                     if (ImGui.BeginTable("deaths", 2, DeathsTableFlags)) {
                         XGui.TableHeader("Player Names", "Time of Death", "Alliance");
 
-                        foreach (var death in run.DeathList) {
-                            XGui.TableRow($"{death.PlayerName}", $"{death.TimeOfDeath:hh\\:mm\\:ss tt}", $"{death.Alliance}");
-                        }
+                        foreach (var death in run.DeathList) XGui.TableRow($"{death.PlayerName}", $"{death.TimeOfDeath:hh\\:mm\\:ss tt}", $"{death.Alliance}");
                     }
 
                     ImGui.EndTable();

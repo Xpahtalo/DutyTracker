@@ -12,14 +12,13 @@ using DutyTracker_Configuration = Configuration;
 
 public sealed class DutyTracker : IDalamudPlugin
 {
-    public        string Name => "DutyTracker";
-    private const string CommandName = "/dt";
+    private DalamudPluginInterface PluginInterface { get; }
+    private ICommandManager        CommandManager  { get; }
+    public  string                 Name            => "DutyTracker";
 
-    private         DalamudPluginInterface PluginInterface { get; init; }
-    private         ICommandManager         CommandManager  { get; init; }
-
-    public          Configuration          Configuration   { get; init; }
-    public readonly DutyManager            DutyManager;
+    public          Configuration Configuration { get; init; }
+    public readonly DutyManager   DutyManager;
+    private const   string        CommandName = "/dt";
 
 
     public DutyTracker(
@@ -72,13 +71,7 @@ public sealed class DutyTracker : IDalamudPlugin
             Service.WindowService.ToggleWindow("MainWindow");
     }
 
-    private void OpenSettings()
-    {
-        Service.WindowService.OpenWindow("MainWindow");
-    }
-    
-    private void DrawUi()
-    {
-        Service.WindowService.Draw();
-    }
+    private void OpenSettings() { Service.WindowService.OpenWindow("MainWindow"); }
+
+    private void DrawUi() { Service.WindowService.Draw(); }
 }

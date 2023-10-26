@@ -15,6 +15,14 @@ public class Duty
     public List<Run>     RunList       { get; }
     public AllianceType  AllianceType  { get; }
 
+    public int TotalDeaths => RunList.Sum(run => run.DeathList.Count);
+    public int TotalWipes  => int.Max(RunList.Count - 1, 0);
+
+    public List<Death> AllDeaths
+    {
+        get { return RunList.Aggregate(new List<Death>(), (x, y) => x.Concat(y.DeathList).ToList()); }
+    }
+
     public Duty(TerritoryType territoryType, AllianceType allianceType)
     {
         TerritoryType = territoryType;
@@ -22,13 +30,5 @@ public class Duty
         EndTime       = DateTime.MinValue;
         RunList       = new List<Run>();
         AllianceType  = allianceType;
-    }
-
-    public int TotalDeaths => RunList.Sum(run => run.DeathList.Count);
-    public int TotalWipes  => int.Max(RunList.Count - 1, 0);
-
-    public List<Death> AllDeaths
-    {
-        get { return RunList.Aggregate(new List<Death>(), (x, y) => x.Concat(y.DeathList).ToList()); }
     }
 }

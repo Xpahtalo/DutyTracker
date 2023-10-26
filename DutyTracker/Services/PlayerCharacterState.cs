@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using ImGuiNET;
 
 namespace DutyTracker.Services;
@@ -22,7 +23,7 @@ internal class CachedPartyMember
         Alliance = alliance;
     }
 
-    public override string ToString() { return $"Name: {Name}, ObjectId: {ObjectId}, HP: {Hp}, Alliance: {Alliance}"; }
+    public override string ToString() => $"Name: {Name}, ObjectId: {ObjectId}, HP: {Hp}, Alliance: {Alliance}";
 }
 
 internal enum AllianceState
@@ -55,7 +56,7 @@ public class PlayerDeathEventArgs : EventArgs
 
 public sealed unsafe class PlayerCharacterState : IDisposable
 {
-    private readonly IFramework            _framework;
+    private readonly IFramework           _framework;
     private readonly DutyEventService     _dutyEventService;
     private readonly CachedPartyMember?[] _partyCache;
     private readonly CachedPartyMember?[] _allianceCache;
@@ -164,7 +165,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         }
 
         if (_partyState == PartyState.Running)
-            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex, (_ => _partyAlliance));
+            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex, _ => _partyAlliance);
     }
 
     private void DutyStarted(DutyStartedEventArgs eventArgs)
@@ -188,7 +189,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     private static bool IsAllianceStringDataPopulated()
     {
         var stringArray =
-            FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
+            Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
                 ->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
 
         return !string.IsNullOrWhiteSpace(Marshal.PtrToStringUTF8(new nint(stringArray[0])));
@@ -197,7 +198,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     private void SetAlliances(GroupManager* groupManager)
     {
         var stringArray =
-            FFXIVClientStructs.FFXIV.Client.System.Framework.Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
+            Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
                 ->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
         Service.PluginLog.Debug("Party Strings");
         Service.PluginLog.Debug($"  string{Party1Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party1Position]))}");
@@ -259,14 +260,14 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         _partyAlliance = Alliance.None;
     }
 
-    
+
     // This is a bit messy, but passing in the array and access functions lets me keep the actual logic the exact same 
     // between party and alliance members, while still tracking them separately. It was especially difficult to work
     // with when doing it separately due to code duplication with slight differences.
     private delegate PartyMember* GetPartyMember(int index);
 
     private delegate Alliance GetAlliance(int index);
-    
+
     private void UpdateCache(CachedPartyMember?[] cache, GetPartyMember getMember, GetAlliance getAlliance)
     {
         for (var i = 0; i < cache.Length; i++) {
@@ -313,10 +314,10 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             cache[i] = newPlayer;
         }
     }
-    
-    private static GroupManager* GetSecondGroupManager(GroupManager* firstGroupManager) { return firstGroupManager + 1; }
 
-    private static string GetPlayerName(PartyMember* partyMember) { return Marshal.PtrToStringUTF8(new nint(partyMember->Name)) ?? string.Empty; }
+    private static GroupManager* GetSecondGroupManager(GroupManager* firstGroupManager) => firstGroupManager + 1;
+
+    private static string GetPlayerName(PartyMember* partyMember) => Marshal.PtrToStringUTF8(new nint(partyMember->Name)) ?? string.Empty;
 
     // GroupManager->GetAllianceMemberByIndex may return a non-null pointer if there isn't a player at that index.
     // You can check for a non-player by the ObjectID.
@@ -397,7 +398,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                 ImGui.Text(" - No Alliance - ");
                 return;
             }
-                
+
             ImGui.Text("Alliance Members:");
             if (ImGui.BeginTable($"Alliance#{index}", 5)) {
                 XGui.TableHeader("Index", "Name", "ObjectID", "CurrentHP", "ClassJob");
