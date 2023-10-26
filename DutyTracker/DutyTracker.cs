@@ -48,8 +48,8 @@ public sealed class DutyTracker : IDalamudPlugin
             HelpMessage = "Open the Duty Tracker menu",
         });
 
-        PluginInterface.UiBuilder.Draw         += DrawUi;
-        PluginInterface.UiBuilder.OpenConfigUi += OpenSettings;
+        PluginInterface.UiBuilder.Draw       += DrawUi;
+        PluginInterface.UiBuilder.OpenMainUi += OpenSettings;
 
 #if DEBUG
         // Service.DutyEventService.Debug();
