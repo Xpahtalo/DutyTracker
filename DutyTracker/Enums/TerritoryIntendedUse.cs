@@ -115,7 +115,7 @@ public static class TerritoryIntendedUseExtensions
         {
             TerritoryIntendedUse.RivalWings   => AllianceType.SixParty,
             TerritoryIntendedUse.AllianceRaid => AllianceType.ThreeParty,
-            TerritoryIntendedUse.AlliancePvp  => AllianceType.SixParty,
+            TerritoryIntendedUse.AlliancePvp  => AllianceType.ThreeParty,
             _                                 => AllianceType.None,
         };
 }
