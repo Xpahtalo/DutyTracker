@@ -21,6 +21,7 @@
         <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
     </PropertyGroup>
 
+
     <Import Project="Dalamud.Plugin.Bootstrap.targets"/>
 
 </Project>

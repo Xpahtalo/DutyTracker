@@ -3,6 +3,8 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using DutyTracker.Services;
+using DutyTracker.Services.DutyEvent;
+using DutyTracker.Services.PlayerCharacter;
 
 namespace DutyTracker;
 #pragma warning disable CS8618

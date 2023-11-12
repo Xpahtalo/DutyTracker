@@ -2,57 +2,12 @@
 using System.Runtime.InteropServices;
 using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
+using DutyTracker.Services.DutyEvent;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using ImGuiNET;
 
-namespace DutyTracker.Services;
-
-internal class CachedPartyMember
-{
-    public string   Name     { get; }
-    public uint     ObjectId { get; }
-    public uint     Hp       { get; set; }
-    public Alliance Alliance { get; }
-
-    public CachedPartyMember(string name, uint objectId, uint hp, Alliance alliance)
-    {
-        Name     = name;
-        ObjectId = objectId;
-        Hp       = hp;
-        Alliance = alliance;
-    }
-
-    public override string ToString() => $"Name: {Name}, ObjectId: {ObjectId}, HP: {Hp}, Alliance: {Alliance}";
-}
-
-internal enum AllianceState
-{
-    NoGroup,
-    WaitingForData,
-    Running,
-}
-
-internal enum PartyState
-{
-    NoGroup,
-    WaitingForAlliance,
-    Running,
-}
-
-public class PlayerDeathEventArgs : EventArgs
-{
-    public string   PlayerName { get; init; }
-    public uint     ObjectId   { get; init; }
-    public Alliance Alliance   { get; init; }
-
-    public PlayerDeathEventArgs(string name, uint objectId, Alliance alliance)
-    {
-        PlayerName = name;
-        ObjectId   = objectId;
-        Alliance   = alliance;
-    }
-}
+namespace DutyTracker.Services.PlayerCharacter;
 
 public sealed unsafe class PlayerCharacterState : IDisposable
 {
@@ -73,10 +28,6 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     private Alliance     _alliance5;
 
     // These are all magic numbers that correspond to memory locations in the game.
-    //private readonly int allianceNumberArray     = 68;
-    //private readonly int allianceNumberArraySize = 296;
-    //private readonly int allianceStringArraySize = 45;
-
     private const int AllianceStringPosition = 64;
     private const int Party1Position         = 0;
     private const int Party2Position         = 9;
@@ -86,12 +37,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     private const int AllianceSize           = 40;
     private const int PartySize              = 8;
 
-    private const uint EmptyPlayerObjectId = 3758096384;
-
-
-    public delegate void PlayerDeathDelegate(PlayerDeathEventArgs eventArgs);
-
-    public event PlayerDeathDelegate? OnPlayerDeath;
+    public event EventHandler<PlayerDeathEventArgs>? OnPlayerDeath;
 
     public PlayerCharacterState()
     {
@@ -168,7 +114,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex, _ => _partyAlliance);
     }
 
-    private void DutyStarted(DutyStartedEventArgs eventArgs)
+    private void DutyStarted(object? sender, DutyStartedEventArgs eventArgs)
     {
         if (eventArgs.IntendedUse.HasAlliance()) {
             _allianceState = AllianceState.WaitingForData;
@@ -178,7 +124,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
         }
     }
 
-    private void DutyEnded(DutyEndedEventArgs eventArgs)
+    private void DutyEnded(object? sender, DutyEndedEventArgs eventArgs)
     {
         _allianceState = AllianceState.NoGroup;
         _partyState    = PartyState.NoGroup;
@@ -244,8 +190,10 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
     private void ResetAllianceInfo()
     {
-        for (var i = 0; i < _allianceCache.Length; i++)
+        for (var i = 0; i < _allianceCache.Length; i++) {
             _allianceCache[i] = null;
+        }
+
         _alliance1 = Alliance.None;
         _alliance2 = Alliance.None;
         _alliance3 = Alliance.None;
@@ -255,8 +203,10 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
     private void ResetPartyInfo()
     {
-        for (var i = 0; i < _partyCache.Length; i++)
+        for (var i = 0; i < _partyCache.Length; i++) {
             _partyCache[i] = null;
+        }
+
         _partyAlliance = Alliance.None;
     }
 
@@ -272,7 +222,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
     {
         for (var i = 0; i < cache.Length; i++) {
             var partyMember  = getMember(i);
-            var playerExists = IsRealPlayer(partyMember);
+            var playerExists = IsPlayerInitialized(partyMember);
 
             if (cache[i] is not null) {
                 // Have to check if the player exists first, because the health check will be true if they don't.
@@ -304,7 +254,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
             var alliance   = cache[i]!.Alliance;
 
             Service.PluginLog.Debug($"Played died: {i}, {playerName}, {objectId}, {alliance}");
-            OnPlayerDeath?.Invoke(new PlayerDeathEventArgs(playerName, objectId, alliance));
+            OnPlayerDeath?.Invoke(this, new PlayerDeathEventArgs(playerName, objectId, alliance));
         }
 
         void AddPlayer(PartyMember* partyMember, Alliance alliance, int i)
@@ -319,13 +269,19 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
     private static string GetPlayerName(PartyMember* partyMember) => Marshal.PtrToStringUTF8(new nint(partyMember->Name)) ?? string.Empty;
 
-    // GroupManager->GetAllianceMemberByIndex may return a non-null pointer if there isn't a player at that index.
-    // You can check for a non-player by the ObjectID.
-    private static bool IsRealPlayer(PartyMember* partyMember)
+    /// <summary>
+    ///     <see cref="GroupManager.GetPartyMemberByIndex" /> returns only a pointer. SE pointers can be null, or 0xE0000000
+    ///     if they have cleared the memory.
+    /// </summary>
+    /// <param name="partyMember">A pointer to the <see cref="PartyMember">party member</see>.</param>
+    /// <returns>true if the pointer has been initialized to a valid <see cref="PartyMember" />, otherwise false.</returns>
+    private static bool IsPlayerInitialized(PartyMember* partyMember)
     {
+        const uint seUninitializedPointer = 0xE0000000;
+
         if (partyMember is null)
             return false;
-        if (partyMember->ObjectID == EmptyPlayerObjectId)
+        if (partyMember->ObjectID == seUninitializedPointer)
             return false;
 
         return true;
@@ -382,7 +338,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
                 for (var i = 0; i < 8; i++) {
                     var partyMember = groupManager->GetPartyMemberByIndex(i);
-                    if (IsRealPlayer(partyMember))
+                    if (IsPlayerInitialized(partyMember))
                         DebugPartyMemberRow(partyMember, i);
                     else
                         EmptyPlayerRow(i);
@@ -404,7 +360,7 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                 XGui.TableHeader("Index", "Name", "ObjectID", "CurrentHP", "ClassJob");
                 for (var i = 0; i < 20; i++) {
                     var allianceMember = groupManager->GetAllianceMemberByIndex(i);
-                    if (IsRealPlayer(allianceMember))
+                    if (IsPlayerInitialized(allianceMember))
                         try {
                             DebugPartyMemberRow(allianceMember, i);
                         } catch (Exception ex) {

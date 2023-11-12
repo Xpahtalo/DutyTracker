@@ -2,7 +2,7 @@
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
-using DutyTracker.Services;
+using DutyTracker.Services.PlayerCharacter;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 

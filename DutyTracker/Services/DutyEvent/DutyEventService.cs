@@ -3,22 +3,7 @@ using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using Lumina.Excel.GeneratedSheets;
 
-namespace DutyTracker.Services;
-
-public class DutyStartedEventArgs : EventArgs
-{
-    public TerritoryType        TerritoryType { get; }
-    public TerritoryIntendedUse IntendedUse   => (TerritoryIntendedUse)TerritoryType.TerritoryIntendedUse;
-
-    public DutyStartedEventArgs(TerritoryType territoryType) { TerritoryType = territoryType; }
-}
-
-public class DutyEndedEventArgs : EventArgs
-{
-    public bool Completed { get; }
-
-    public DutyEndedEventArgs(bool completed) { Completed = completed; }
-}
+namespace DutyTracker.Services.DutyEvent;
 
 public sealed class DutyEventService : IDisposable
 {
@@ -28,15 +13,10 @@ public sealed class DutyEventService : IDisposable
     private readonly IDataManager _dataManager;
     private readonly IClientState _clientState;
 
-    public delegate void DutyStartedDelegate(DutyStartedEventArgs eventArgs);
-    public delegate void DutyWipedDelegate();
-    public delegate void DutyRecommencedDelegate();
-    public delegate void DutyEndedDelegate(DutyEndedEventArgs eventArgs);
-
-    public event DutyStartedDelegate?     DutyStarted;
-    public event DutyWipedDelegate?       DutyWiped;
-    public event DutyRecommencedDelegate? DutyRecommenced;
-    public event DutyEndedDelegate?       DutyEnded;
+    public event EventHandler<DutyStartedEventArgs>? DutyStarted;
+    public event EventHandler?                       DutyWiped;
+    public event EventHandler?                       DutyRecommenced;
+    public event EventHandler<DutyEndedEventArgs>?   DutyEnded;
 
 
     public DutyEventService()
@@ -56,8 +36,12 @@ public sealed class DutyEventService : IDisposable
 #if DEBUG
     public void Debug()
     {
-        if (_dutyState.IsDutyStarted)
-            DutyStarted?.Invoke(new DutyStartedEventArgs(_dataManager.Excel.GetSheet<TerritoryType>()?.GetRow(_clientState.TerritoryType)!));
+        if (!_dutyState.IsDutyStarted)
+            return;
+        var territory = _dataManager.Excel.GetSheet<TerritoryType>()?.GetRow(_clientState.TerritoryType);
+        if (territory is null)
+            return;
+        SafeInvokeDutyStarted(territory);
     }
 #endif
 
@@ -72,48 +56,82 @@ public sealed class DutyEventService : IDisposable
 
         Service.PluginLog.Information($"IntendedUse: {territory.TerritoryIntendedUse}, Name: {territory.Name ?? "No Name"}, PlaceName: {territory.PlaceName.Value?.Name ?? "No Name"}");
 
-
         if (!((TerritoryIntendedUse)territory.TerritoryIntendedUse).ShouldTrack())
             return;
 
         _dutyStarted = true;
-        DutyStarted?.Invoke(new DutyStartedEventArgs(territory!));
+        SafeInvokeDutyStarted(territory);
     }
 
     private void OnDutyWiped(object? o, ushort territory)
     {
         Service.PluginLog.Verbose("Duty Wipe");
-        DutyWiped?.Invoke();
+        SafeInvokeDutyWiped();
     }
 
     private void OnDutyRecommenced(object? o, ushort territory)
     {
         Service.PluginLog.Verbose("Duty Recommenced");
-        DutyRecommenced?.Invoke();
+        SafeInvokeDutyRecommenced();
     }
 
     private void OnDutyEnded(object? o, ushort territory)
     {
         if (_dutyStarted) {
             Service.PluginLog.Debug("Detected end of duty via DutyState.DutyCompleted");
-            EndDuty(true);
+            SafeInvokeDutyEnded(true);
         }
     }
 
-    // This gets called before DutyState.DutyCompleted, so we can intercept in case the duty is abandoned instead of completed. 
+    // This gets called before DutyState.DutyCompleted, so we can intercept in case the duty is abandoned instead of
+    // completed.
     private void OnTerritoryChanged(ushort territoryType)
     {
         if (_dutyStarted && _dutyState.IsDutyStarted == false) {
             Service.PluginLog.Debug("Detected end of duty via ClientState.TerritoryChanged");
-            EndDuty(false);
+            SafeInvokeDutyEnded(false);
         }
     }
 
-    private void EndDuty(bool completed)
+    // Because events are being invoked while we're still in the client's native code, unhandled exceptions will cause
+    // an immediate crash to desktop. Wrapping them like this masks the problem, but I think users would prefer the
+    // plugin to be broken than their game to crash.
+    private void SafeInvokeDutyStarted(TerritoryType territoryType)
     {
-        Service.PluginLog.Verbose($"Duty Ended. Completed: {completed}");
-        _dutyStarted = false;
-        DutyEnded?.Invoke(new DutyEndedEventArgs(completed));
+        try {
+            DutyStarted?.Invoke(this, new DutyStartedEventArgs(territoryType));
+        } catch (Exception e) {
+            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyStarted");
+        }
+    }
+
+    private void SafeInvokeDutyWiped()
+    {
+        try {
+            DutyWiped?.Invoke(this, EventArgs.Empty);
+        } catch (Exception e) {
+            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyWiped");
+        }
+    }
+
+    private void SafeInvokeDutyRecommenced()
+    {
+        try {
+            DutyRecommenced?.Invoke(this, EventArgs.Empty);
+        } catch (Exception e) {
+            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyRecommenced");
+        }
+    }
+
+    private void SafeInvokeDutyEnded(bool completed)
+    {
+        try {
+            Service.PluginLog.Verbose($"Duty Ended. Completed: {completed}");
+            _dutyStarted = false;
+            DutyEnded?.Invoke(this, new DutyEndedEventArgs(completed));
+        } catch (Exception e) {
+            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyEnded");
+        }
     }
 
     public void Dispose()
