@@ -5,6 +5,7 @@ using DutyTracker.Extensions;
 using DutyTracker.Services.PlayerCharacter;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
+using XpahtaLib.DalamudUtilities.Extensions;
 using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Windows;
@@ -71,7 +72,7 @@ public class DebugWindow : Window, IDisposable
                 return;
             }
 
-            var intendedUse = (TerritoryIntendedUseEnum)territory.TerritoryIntendedUse;
+            var intendedUse = territory.GetIntendedUseEnum();
             ImGui.Text($"Territory Type: {territory}");
             ImGui.Text($"Territory Name: {territory.PlaceName.Value?.Name} - {territory.Name}");
             ImGui.Text($"IsPvpZone: {territory.IsPvpZone}");

@@ -2,6 +2,7 @@
 using Dalamud.Plugin.Services;
 using DutyTracker.Extensions;
 using Lumina.Excel.GeneratedSheets;
+using XpahtaLib.DalamudUtilities.Extensions;
 using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Services.DutyEvent;
@@ -57,7 +58,7 @@ public sealed class DutyEventService : IDisposable
 
         Service.PluginLog.Information($"IntendedUse: {territory.TerritoryIntendedUse}, Name: {territory.Name ?? "No Name"}, PlaceName: {territory.PlaceName.Value?.Name ?? "No Name"}");
 
-        if (!((TerritoryIntendedUseEnum)territory.TerritoryIntendedUse).ShouldTrack())
+        if (!territory.GetIntendedUseEnum().ShouldTrack())
             return;
 
         _dutyStarted = true;
