@@ -6,6 +6,7 @@ using DutyTracker.Services.DutyEvent;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using ImGuiNET;
+using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Services.PlayerCharacter;
 

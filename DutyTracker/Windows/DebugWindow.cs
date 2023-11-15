@@ -1,10 +1,11 @@
 ﻿using System;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
-using DutyTracker.Enums;
+using DutyTracker.Extensions;
 using DutyTracker.Services.PlayerCharacter;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
+using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Windows;
 
@@ -70,7 +71,7 @@ public class DebugWindow : Window, IDisposable
                 return;
             }
 
-            var intendedUse = (TerritoryIntendedUse)territory.TerritoryIntendedUse;
+            var intendedUse = (TerritoryIntendedUseEnum)territory.TerritoryIntendedUse;
             ImGui.Text($"Territory Type: {territory}");
             ImGui.Text($"Territory Name: {territory.PlaceName.Value?.Name} - {territory.Name}");
             ImGui.Text($"IsPvpZone: {territory.IsPvpZone}");

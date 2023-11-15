@@ -7,6 +7,7 @@ using DutyTracker.Enums;
 using DutyTracker.Extensions;
 using DutyTracker.Services.DutyEvent;
 using DutyTracker.Services.PlayerCharacter;
+using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Duty_Events;
 

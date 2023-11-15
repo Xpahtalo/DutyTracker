@@ -1,13 +1,13 @@
 using System;
-using DutyTracker.Enums;
 using Lumina.Excel.GeneratedSheets;
+using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Services.DutyEvent;
 
 public class DutyStartedEventArgs : EventArgs
 {
-    public TerritoryType        TerritoryType { get; }
-    public TerritoryIntendedUse IntendedUse   => (TerritoryIntendedUse)TerritoryType.TerritoryIntendedUse;
+    public TerritoryType            TerritoryType { get; }
+    public TerritoryIntendedUseEnum IntendedUse   => (TerritoryIntendedUseEnum)TerritoryType.TerritoryIntendedUse;
 
     public DutyStartedEventArgs(TerritoryType territoryType) { TerritoryType = territoryType; }
 }

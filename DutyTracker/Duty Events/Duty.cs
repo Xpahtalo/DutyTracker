@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using DutyTracker.Enums;
 using Lumina.Excel.GeneratedSheets;
+using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Duty_Events;
 
