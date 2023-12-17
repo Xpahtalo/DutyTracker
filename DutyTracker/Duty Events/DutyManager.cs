@@ -5,7 +5,10 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
 using DutyTracker.Extensions;
-using DutyTracker.Services;
+using DutyTracker.Services.DutyEvent;
+using DutyTracker.Services.PlayerCharacter;
+using Lumina.Excel.GeneratedSheets;
+using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Duty_Events;
 
@@ -53,20 +56,30 @@ public class DutyManager : IDisposable
         _currentRun           = null;
 
         _playerCharacterState.OnPlayerDeath += AddDeath;
-        _dutyEventService.DutyStarted       += StartDuty;
-        _dutyEventService.DutyWiped         += EndRun;
-        _dutyEventService.DutyRecommenced   += StartNewRun;
-        _dutyEventService.DutyEnded         += EndDuty;
+        _dutyEventService.DutyStarted       += OnDutyStarted;
+        _dutyEventService.DutyWiped         += OnDutyWiped;
+        _dutyEventService.DutyRecommenced   += OnDutyRecommenced;
+        _dutyEventService.DutyEnded         += OnDutyEnded;
     }
 
     public void Dispose()
     {
         _playerCharacterState.OnPlayerDeath -= AddDeath;
-        _dutyEventService.DutyStarted       -= StartDuty;
-        _dutyEventService.DutyWiped         -= EndRun;
-        _dutyEventService.DutyRecommenced   -= StartNewRun;
-        _dutyEventService.DutyEnded         -= EndDuty;
+        _dutyEventService.DutyStarted       -= OnDutyStarted;
+        _dutyEventService.DutyWiped         -= OnDutyWiped;
+        _dutyEventService.DutyRecommenced   -= OnDutyRecommenced;
+        _dutyEventService.DutyEnded         -= OnDutyEnded;
     }
+
+    // Really crappy way to pass in the args until I have time to redo this plugin.
+    private void OnDutyStarted(object? o, DutyStartedEventArgs args) => StartDuty(args);
+
+    private void OnDutyWiped(object? o, EventArgs args) => EndRun();
+
+    private void OnDutyRecommenced(object? o, EventArgs args) => StartNewRun();
+
+    private void OnDutyEnded(object? o, DutyEndedEventArgs args) => EndDuty(args);
+
 
     private void StartDuty(DutyStartedEventArgs eventArgs)
     {
@@ -135,19 +148,30 @@ public class DutyManager : IDisposable
         DutyList.Add(_currentDuty);
     }
 
-    private void AddDeath(PlayerDeathEventArgs eventArgs)
+    private void AddDeath(object? o, PlayerDeathEventArgs eventArgs)
     {
         _currentRun?.DeathList.Add(new Death(eventArgs.ObjectId,
                                              eventArgs.PlayerName,
                                              DateTime.Now, eventArgs.Alliance));
     }
 
-    private void EndRun() { _currentRun!.EndTime = DateTime.Now; }
+    private void EndRun()
+    {
+        if (_currentRun is not null) 
+            _currentRun.EndTime = DateTime.Now;
+    }
 
     private void StartNewRun()
     {
+        if (_currentDuty is null)
+        {
+            var territory = Service.DataManager.Excel.GetSheet<TerritoryType>()?.GetRow(Service.ClientState.TerritoryType);
+            if (territory is null)
+                return;
+            StartDuty(new DutyStartedEventArgs(territory));
+        }
         _currentRun = new Run();
-        _currentDuty!.RunList.Add(_currentRun);
+        _currentDuty?.RunList.Add(_currentRun);
     }
 
     private SeString InfoMessage(string label, string info, bool highlightInfo = false)

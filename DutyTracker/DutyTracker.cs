@@ -4,6 +4,8 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using DutyTracker.Duty_Events;
 using DutyTracker.Services;
+using DutyTracker.Services.DutyEvent;
+using DutyTracker.Services.PlayerCharacter;
 using DutyTracker.Windows;
 
 namespace DutyTracker;
