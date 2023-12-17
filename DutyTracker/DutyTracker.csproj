@@ -17,14 +17,9 @@
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <DalamudLibPath>$(appdata)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
-    </PropertyGroup>
-
     <ItemGroup>
         <ProjectReference Include="..\XpahtaLib\XpahtaLib\XpahtaLib.csproj"/>
     </ItemGroup>
-
 
     <Import Project="Dalamud.Plugin.Bootstrap.targets"/>
 

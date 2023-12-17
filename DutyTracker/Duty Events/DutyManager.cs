@@ -7,6 +7,7 @@ using DutyTracker.Enums;
 using DutyTracker.Extensions;
 using DutyTracker.Services.DutyEvent;
 using DutyTracker.Services.PlayerCharacter;
+using Lumina.Excel.GeneratedSheets;
 using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Duty_Events;
@@ -156,13 +157,21 @@ public class DutyManager : IDisposable
 
     private void EndRun()
     {
-        if (_currentRun is not null) _currentRun.EndTime = DateTime.Now;
+        if (_currentRun is not null) 
+            _currentRun.EndTime = DateTime.Now;
     }
 
     private void StartNewRun()
     {
+        if (_currentDuty is null)
+        {
+            var territory = Service.DataManager.Excel.GetSheet<TerritoryType>()?.GetRow(Service.ClientState.TerritoryType);
+            if (territory is null)
+                return;
+            StartDuty(new DutyStartedEventArgs(territory));
+        }
         _currentRun = new Run();
-        _currentDuty!.RunList.Add(_currentRun);
+        _currentDuty?.RunList.Add(_currentRun);
     }
 
     private SeString InfoMessage(string label, string info, bool highlightInfo = false)

@@ -3,7 +3,6 @@ using Dalamud.Plugin.Services;
 using DutyTracker.Extensions;
 using Lumina.Excel.GeneratedSheets;
 using XpahtaLib.DalamudUtilities.Extensions;
-using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Services.DutyEvent;
 
