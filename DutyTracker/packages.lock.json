@@ -8,8 +8,16 @@
         "resolved": "2.1.12",
         "contentHash": "Sc0PVxvgg4NQjcI8n10/VfUQBAS4O+Fw2pZrAqBdRMbthYGeogzu5+xmIGCGmsEZ/ukMOBuAqiNiB5qA3MRalg=="
       },
+      "NetEscapades.EnumGenerators": {
+        "type": "Transitive",
+        "resolved": "1.0.0-beta08",
+        "contentHash": "xMALwEe2raVfGmczJUJzLQuxKL9f3NnsArSGgG1YH2sUqb5GAmqzyKa+oNGfJS+tRdj6NY4+DlcbAmliNoBMdg=="
+      },
       "xpahtalib": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "NetEscapades.EnumGenerators": "[1.0.0-beta08, )"
+        }
       }
     }
   }
