@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <Authors>X'pahtalo</Authors>
-        <Version>1.0.1.8</Version>
-        <PackageProjectUrl>https://github.com/Xpahtalo/DutyTracker</PackageProjectUrl>
+        <Authors>Infi, X'pahtalo</Authors>
+        <Version>1.0.2.0</Version>
+        <PackageProjectUrl>https://github.com/Infiziert90/DutyTracker</PackageProjectUrl>
     </PropertyGroup>
 
     <PropertyGroup>
-        <TargetFramework>net7.0-windows</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <Platforms>x64</Platforms>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
@@ -16,10 +16,6 @@
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\XpahtaLib\XpahtaLib\XpahtaLib.csproj"/>
-    </ItemGroup>
 
     <Import Project="Dalamud.Plugin.Bootstrap.targets"/>
 

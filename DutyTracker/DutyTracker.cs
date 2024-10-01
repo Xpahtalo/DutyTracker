@@ -2,7 +2,7 @@
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
-using DutyTracker.Duty_Events;
+using DutyTracker.DutyEvents;
 using DutyTracker.Services;
 using DutyTracker.Services.DutyEvent;
 using DutyTracker.Services.PlayerCharacter;
@@ -10,46 +10,47 @@ using DutyTracker.Windows;
 
 namespace DutyTracker;
 
-using DutyTracker_Configuration = Configuration;
-
 public sealed class DutyTracker : IDalamudPlugin
 {
-    private DalamudPluginInterface PluginInterface { get; }
-    private ICommandManager        CommandManager  { get; }
-    public  string                 Name            => "DutyTracker";
+    [PluginService] public static IDataManager Data { get; private set; } = null!;
+    [PluginService] public static IFramework Framework { get; private set; } = null!;
+    [PluginService] public static ICommandManager Commands { get; private set; } = null!;
+    [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
+    [PluginService] public static IClientState ClientState { get; private set; } = null!;
+    [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
+    [PluginService] public static IPluginLog Log { get; private set; } = null!;
+    [PluginService] public static IDutyState DutyState { get; private set; } = null!;
+    [PluginService] public static IGameGui GameGui { get; private set; } = null!;
 
-    public          Configuration Configuration { get; init; }
-    public readonly DutyManager   DutyManager;
-    private const   string        CommandName = "/dt";
+    private const string CommandName = "/dt";
 
+    public readonly Configuration Configuration;
+    public readonly DutyManager DutyManager;
 
-    public DutyTracker(
-        [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface,
-        [RequiredVersion("1.0")] ICommandManager        commandManager)
+    internal static DutyEventService DutyEventService = null!;
+    internal static PlayerCharacterState PlayerCharacterState = null!;
+    internal static WindowService WindowService = null!;
+
+    public DutyTracker()
     {
-        PluginInterface = pluginInterface;
-        CommandManager  = commandManager;
-
-        PluginInterface.Create<Service>();
-        Service.DutyEventService     = new DutyEventService();
-        Service.PlayerCharacterState = new PlayerCharacterState();
-        Service.WindowService        = new WindowService();
+        DutyEventService = new DutyEventService();
+        PlayerCharacterState = new PlayerCharacterState();
+        WindowService = new WindowService();
 
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        Configuration.Initialize(PluginInterface);
 
-        DutyManager = PluginInterface.Create<DutyManager>(Configuration)!;
+        DutyManager = new DutyManager(this);
 
-        Service.WindowService.AddWindow("MainWindow",   new MainWindow(DutyManager, Configuration));
-        Service.WindowService.AddWindow("DutyExplorer", new DutyExplorerWindow(DutyManager));
-        Service.WindowService.AddWindow("Debug",        new DebugWindow());
+        WindowService.AddWindow("MainWindow", new MainWindow(this));
+        WindowService.AddWindow("DutyExplorer", new DutyExplorerWindow(this));
+        WindowService.AddWindow("Debug", new DebugWindow());
 
-        CommandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "Open the Duty Tracker menu",
         });
 
-        PluginInterface.UiBuilder.Draw       += DrawUi;
+        PluginInterface.UiBuilder.Draw += DrawUi;
         PluginInterface.UiBuilder.OpenMainUi += OpenSettings;
 
 #if DEBUG
@@ -59,21 +60,25 @@ public sealed class DutyTracker : IDalamudPlugin
 
     public void Dispose()
     {
-        CommandManager.RemoveHandler(CommandName);
-        Service.WindowService.Dispose();
-        Service.PlayerCharacterState.Dispose();
-        Service.DutyEventService.Dispose();
+        Commands.RemoveHandler(CommandName);
+        WindowService.Dispose();
+
+        PlayerCharacterState.Dispose();
+        DutyEventService.Dispose();
     }
 
     private void OnCommand(string command, string args)
     {
         if (args == "debug")
-            Service.WindowService.OpenWindow("Debug");
+            WindowService.OpenWindow("Debug");
         else
-            Service.WindowService.ToggleWindow("MainWindow");
+            WindowService.ToggleWindow("MainWindow");
     }
 
-    private void OpenSettings() { Service.WindowService.OpenWindow("MainWindow"); }
+    private void OpenSettings() => WindowService.OpenWindow("MainWindow");
 
-    private void DrawUi() { Service.WindowService.Draw(); }
+    private void DrawUi()
+    {
+        WindowService.Draw();
+    }
 }

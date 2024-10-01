@@ -1,85 +1,71 @@
 ﻿using System;
-using Dalamud.Plugin.Services;
 using DutyTracker.Extensions;
 using Lumina.Excel.GeneratedSheets;
-using XpahtaLib.DalamudUtilities.Extensions;
 
 namespace DutyTracker.Services.DutyEvent;
 
 public sealed class DutyEventService : IDisposable
 {
-    private bool _dutyStarted;
+    private bool DutyStarted;
 
-    private readonly IDutyState   _dutyState;
-    private readonly IDataManager _dataManager;
-    private readonly IClientState _clientState;
-
-    public event EventHandler<DutyStartedEventArgs>? DutyStarted;
-    public event EventHandler?                       DutyWiped;
-    public event EventHandler?                       DutyRecommenced;
-    public event EventHandler<DutyEndedEventArgs>?   DutyEnded;
-
+    public event EventHandler<DutyStartedEventArgs>? OnDutyStartedEvent;
+    public event EventHandler? OnDutyWipedEvent;
+    public event EventHandler? OnDutyRecommencedEvent;
+    public event EventHandler<DutyEndedEventArgs>? OnDutyEndedEvent;
 
     public DutyEventService()
     {
-        _dutyState   = Service.DutyState;
-        _dataManager = Service.DataManager;
-        _clientState = Service.ClientState;
-
-        _dutyState.DutyStarted        += OnDutyStarted;
-        _dutyState.DutyWiped          += OnDutyWiped;
-        _dutyState.DutyRecommenced    += OnDutyRecommenced;
-        _dutyState.DutyCompleted      += OnDutyEnded;
-        _clientState.TerritoryChanged += OnTerritoryChanged;
+        DutyTracker.DutyState.DutyStarted += OnDutyStarted;
+        DutyTracker.DutyState.DutyWiped += OnDutyWiped;
+        DutyTracker.DutyState.DutyRecommenced += OnDutyRecommenced;
+        DutyTracker.DutyState.DutyCompleted += OnDutyEnded;
+        DutyTracker.ClientState.TerritoryChanged += OnTerritoryChanged;
     }
 
-
-#if DEBUG
-    public void Debug()
+    public void Dispose()
     {
-        if (!_dutyState.IsDutyStarted)
-            return;
-        var territory = _dataManager.Excel.GetSheet<TerritoryType>()?.GetRow(_clientState.TerritoryType);
-        if (territory is null)
-            return;
-        SafeInvokeDutyStarted(territory);
+        DutyTracker.DutyState.DutyStarted -= OnDutyStarted;
+        DutyTracker.DutyState.DutyWiped -= OnDutyWiped;
+        DutyTracker.DutyState.DutyRecommenced -= OnDutyRecommenced;
+        DutyTracker.DutyState.DutyCompleted -= OnDutyEnded;
+        DutyTracker.ClientState.TerritoryChanged -= OnTerritoryChanged;
     }
-#endif
 
     private void OnDutyStarted(object? o, ushort territoryType)
     {
-        Service.PluginLog.Information($"Duty Detected. TerritoryType: {territoryType}");
-        var territory = _dataManager.Excel.GetSheet<TerritoryType>()?.GetRow(territoryType);
-        if (territory is null) {
-            Service.PluginLog.Warning("Could not load territory sheet.");
+        DutyTracker.Log.Information($"Duty Detected. TerritoryType: {territoryType}");
+        var territory = Sheets.TerritorySheet.GetRow(territoryType);
+        if (territory is null)
+        {
+            DutyTracker.Log.Warning("Could not load territory sheet.");
             return;
         }
 
-        Service.PluginLog.Information($"IntendedUse: {territory.TerritoryIntendedUse}, Name: {territory.Name ?? "No Name"}, PlaceName: {territory.PlaceName.Value?.Name ?? "No Name"}");
-
+        DutyTracker.Log.Information($"IntendedUse: {territory.TerritoryIntendedUse}, Name: {territory.Name ?? "No Name"}, PlaceName: {territory.PlaceName.Value?.Name ?? "No Name"}");
         if (!territory.GetIntendedUseEnum().ShouldTrack())
             return;
 
-        _dutyStarted = true;
+        DutyStarted = true;
         SafeInvokeDutyStarted(territory);
     }
 
     private void OnDutyWiped(object? o, ushort territory)
     {
-        Service.PluginLog.Verbose("Duty Wipe");
+        DutyTracker.Log.Verbose("Duty Wipe");
         SafeInvokeDutyWiped();
     }
 
     private void OnDutyRecommenced(object? o, ushort territory)
     {
-        Service.PluginLog.Verbose("Duty Recommenced");
+        DutyTracker.Log.Verbose("Duty Recommenced");
         SafeInvokeDutyRecommenced();
     }
 
     private void OnDutyEnded(object? o, ushort territory)
     {
-        if (_dutyStarted) {
-            Service.PluginLog.Debug("Detected end of duty via DutyState.DutyCompleted");
+        if (DutyStarted)
+        {
+            DutyTracker.Log.Debug("Detected end of duty via DutyState.DutyCompleted");
             SafeInvokeDutyEnded(true);
         }
     }
@@ -88,8 +74,9 @@ public sealed class DutyEventService : IDisposable
     // completed.
     private void OnTerritoryChanged(ushort territoryType)
     {
-        if (_dutyStarted && _dutyState.IsDutyStarted == false) {
-            Service.PluginLog.Debug("Detected end of duty via ClientState.TerritoryChanged");
+        if (DutyStarted && DutyTracker.DutyState.IsDutyStarted == false)
+        {
+            DutyTracker.Log.Debug("Detected end of duty via ClientState.TerritoryChanged");
             SafeInvokeDutyEnded(false);
         }
     }
@@ -99,48 +86,51 @@ public sealed class DutyEventService : IDisposable
     // plugin to be broken than their game to crash.
     private void SafeInvokeDutyStarted(TerritoryType territoryType)
     {
-        try {
-            DutyStarted?.Invoke(this, new DutyStartedEventArgs(territoryType));
-        } catch (Exception e) {
-            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyStarted");
+        try
+        {
+            OnDutyStartedEvent?.Invoke(this, new DutyStartedEventArgs(territoryType));
+        }
+        catch (Exception e)
+        {
+            DutyTracker.Log.Error(e, "Unhandled exception when invoking DutyEventService.DutyStarted");
         }
     }
 
     private void SafeInvokeDutyWiped()
     {
-        try {
-            DutyWiped?.Invoke(this, EventArgs.Empty);
-        } catch (Exception e) {
-            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyWiped");
+        try
+        {
+            OnDutyWipedEvent?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception e)
+        {
+            DutyTracker.Log.Error(e, "Unhandled exception when invoking DutyEventService.DutyWiped");
         }
     }
 
     private void SafeInvokeDutyRecommenced()
     {
-        try {
-            DutyRecommenced?.Invoke(this, EventArgs.Empty);
-        } catch (Exception e) {
-            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyRecommenced");
+        try
+        {
+            OnDutyRecommencedEvent?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception e)
+        {
+            DutyTracker.Log.Error(e, "Unhandled exception when invoking DutyEventService.DutyRecommenced");
         }
     }
 
     private void SafeInvokeDutyEnded(bool completed)
     {
-        try {
-            Service.PluginLog.Verbose($"Duty Ended. Completed: {completed}");
-            _dutyStarted = false;
-            DutyEnded?.Invoke(this, new DutyEndedEventArgs(completed));
-        } catch (Exception e) {
-            Service.PluginLog.Error(e, "Unhandled exception when invoking DutyEventService.DutyEnded");
+        try
+        {
+            DutyTracker.Log.Verbose($"Duty Ended. Completed: {completed}");
+            DutyStarted = false;
+            OnDutyEndedEvent?.Invoke(this, new DutyEndedEventArgs(completed));
         }
-    }
-
-    public void Dispose()
-    {
-        _dutyState.DutyStarted        -= OnDutyStarted;
-        _dutyState.DutyWiped          -= OnDutyWiped;
-        _dutyState.DutyRecommenced    -= OnDutyRecommenced;
-        _dutyState.DutyCompleted      -= OnDutyEnded;
-        _clientState.TerritoryChanged -= OnTerritoryChanged;
+        catch (Exception e)
+        {
+            DutyTracker.Log.Error(e, "Unhandled exception when invoking DutyEventService.DutyEnded");
+        }
     }
 }
