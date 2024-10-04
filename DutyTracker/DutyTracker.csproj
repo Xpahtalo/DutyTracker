@@ -2,7 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <Authors>Infi, X'pahtalo</Authors>
-        <Version>1.0.2.0</Version>
+        <Version>1.0.2.1</Version>
         <PackageProjectUrl>https://github.com/Infiziert90/DutyTracker</PackageProjectUrl>
     </PropertyGroup>
 

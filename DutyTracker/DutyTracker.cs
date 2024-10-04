@@ -7,6 +7,7 @@ using DutyTracker.Services;
 using DutyTracker.Services.DutyEvent;
 using DutyTracker.Services.PlayerCharacter;
 using DutyTracker.Windows;
+using DutyTracker.Windows.Config;
 
 namespace DutyTracker;
 
@@ -20,7 +21,6 @@ public sealed class DutyTracker : IDalamudPlugin
     [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
     [PluginService] public static IDutyState DutyState { get; private set; } = null!;
-    [PluginService] public static IGameGui GameGui { get; private set; } = null!;
 
     private const string CommandName = "/dt";
 
@@ -42,6 +42,7 @@ public sealed class DutyTracker : IDalamudPlugin
         DutyManager = new DutyManager(this);
 
         WindowService.AddWindow("MainWindow", new MainWindow(this));
+        WindowService.AddWindow("ConfigWindow", new ConfigWindow(this));
         WindowService.AddWindow("DutyExplorer", new DutyExplorerWindow(this));
         WindowService.AddWindow("Debug", new DebugWindow());
 
@@ -51,7 +52,8 @@ public sealed class DutyTracker : IDalamudPlugin
         });
 
         PluginInterface.UiBuilder.Draw += DrawUi;
-        PluginInterface.UiBuilder.OpenMainUi += OpenSettings;
+        PluginInterface.UiBuilder.OpenMainUi += OpenMain;
+        PluginInterface.UiBuilder.OpenConfigUi += OpenSettings;
 
 #if DEBUG
         // Service.DutyEventService.Debug();
@@ -75,7 +77,8 @@ public sealed class DutyTracker : IDalamudPlugin
             WindowService.ToggleWindow("MainWindow");
     }
 
-    private void OpenSettings() => WindowService.OpenWindow("MainWindow");
+    private void OpenMain() => WindowService.OpenWindow("MainWindow");
+    private void OpenSettings() => WindowService.OpenWindow("ConfigWindow");
 
     private void DrawUi()
     {

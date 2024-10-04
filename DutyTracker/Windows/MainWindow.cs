@@ -34,7 +34,6 @@ public sealed class MainWindow : Window, IDisposable
             return;
 
         DisplayStatusTab();
-        DisplayOptionsTab();
         DisplayInfoTab();
     }
 
@@ -80,20 +79,6 @@ public sealed class MainWindow : Window, IDisposable
         if (ImGui.Button("Open Debug"))
             DutyTracker.WindowService.ToggleWindow("Debug");
 #endif
-    }
-
-    private void DisplayOptionsTab()
-    {
-        using var tabItem = ImRaii.TabItem("Options");
-        if (!tabItem.Success)
-            return;
-
-        var changed = false;
-        changed |= ImGui.Checkbox("Include [DutyTracker] label", ref DutyTracker.Configuration.IncludeDutyTrackerLabel);
-        changed |= ImGui.Checkbox("Suppress values that are zero", ref DutyTracker.Configuration.SuppressEmptyValues);
-
-        if (changed)
-            DutyTracker.Configuration.Save();
     }
 
     private void DisplayInfoTab()
