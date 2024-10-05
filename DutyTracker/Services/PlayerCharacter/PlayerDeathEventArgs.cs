@@ -3,16 +3,8 @@ using DutyTracker.Enums;
 
 namespace DutyTracker.Services.PlayerCharacter;
 
-public class PlayerDeathEventArgs : EventArgs
+public class PlayerDeathEventArgs(string name, Alliance alliance) : EventArgs
 {
-    public string   PlayerName { get; }
-    public uint     ObjectId   { get; }
-    public Alliance Alliance   { get; }
-
-    public PlayerDeathEventArgs(string name, uint objectId, Alliance alliance)
-    {
-        PlayerName = name;
-        ObjectId   = objectId;
-        Alliance   = alliance;
-    }
+    public readonly string PlayerName = name;
+    public readonly Alliance Alliance = alliance;
 }

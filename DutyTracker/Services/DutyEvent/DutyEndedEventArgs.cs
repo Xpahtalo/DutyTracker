@@ -2,9 +2,7 @@ using System;
 
 namespace DutyTracker.Services.DutyEvent;
 
-public class DutyEndedEventArgs : EventArgs
+public class DutyEndedEventArgs(bool completed) : EventArgs
 {
-    public bool Completed { get; }
-
-    public DutyEndedEventArgs(bool completed) { Completed = completed; }
+    public readonly bool Completed = completed;
 }

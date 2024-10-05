@@ -1,10 +1,10 @@
 {
-  "Author": "X'pahtalo",
+  "Author": "Infi, X'pahtalo",
   "Name": "Duty Tracker",
   "Punchline": "Track some duty info.",
   "Description": "Track some duty info. /dt open the menu",
   "InternalName": "DutyTracker",
   "ApplicableVersion": "any",
-  "RepoUrl": "https://github.com/Xpahtalo/DutyTracker",
+  "RepoUrl": "https://github.com/Infiziert90/DutyTracker",
   "Tags": []
 }

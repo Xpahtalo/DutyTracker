@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Numerics;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using DutyTracker.Duty_Events;
 using DutyTracker.Extensions;
 using ImGuiNET;
 
@@ -9,101 +9,84 @@ namespace DutyTracker.Windows;
 
 public sealed class MainWindow : Window, IDisposable
 {
-    private readonly DutyManager   _dutyManager;
-    private readonly Configuration _configuration;
+    private readonly DutyTracker DutyTracker;
 
-    public MainWindow(DutyManager dutyManager, Configuration configuration)
-        : base("Duty Tracker")
+    public MainWindow(DutyTracker dutyTracker) : base("Duty Tracker")
     {
+        Flags = ImGuiWindowFlags.AlwaysAutoResize;
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(248, 250),
-            MaximumSize = new Vector2(248, 250),
+            MaximumSize = new Vector2(float.MaxValue, float.MaxValue),
         };
 
-        Flags = ImGuiWindowFlags.NoResize;
-
-        _dutyManager   = dutyManager;
-        _configuration = configuration;
+        DutyTracker = dutyTracker;
     }
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+    }
 
     public override void Draw()
     {
-        if (ImGui.BeginTabBar("MainWindowTabBar")) {
-            DisplayStatusTab();
-            DisplayOptionsTab();
-            DisplayInfoTab();
-        }
+        using var tabBar = ImRaii.TabBar("MainWindowTabBar");
+        if (!tabBar.Success)
+            return;
 
-        ImGui.EndTabBar();
+        DisplayStatusTab();
+        DisplayInfoTab();
     }
 
     private void DisplayStatusTab()
     {
-        if (!ImGui.BeginTabItem("Status"))
+        using var tabItem = ImRaii.TabItem("Status");
+        if (!tabItem.Success)
             return;
 
-        var newestDuty = _dutyManager.GetMostRecentDuty();
-        var newestRun  = _dutyManager.GetMostRecentRun();
-
-        if (newestDuty is not null) {
-            XGui.InfoText("Start Time:",           $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
-            XGui.InfoText("Start of Current Run:", $"{newestDuty.StartTime:hh\\:mm\\:ss tt}");
-            if (_dutyManager.DutyActive) {
-                XGui.InfoText("Elapsed Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
+        var newestDuty = DutyTracker.DutyManager.GetMostRecentDuty();
+        var newestRun = DutyTracker.DutyManager.GetMostRecentRun();
+        if (newestDuty is not null)
+        {
+            Helper.InfoText("Start Time:", $@"{newestDuty.StartTime:hh\:mm\:ss tt}");
+            Helper.InfoText("Start of Current Run:", $@"{newestDuty.StartTime:hh\:mm\:ss tt}");
+            if (DutyTracker.DutyManager.DutyActive)
+            {
+                Helper.InfoText("Elapsed Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
                 if (newestRun is not null)
-                    XGui.InfoText("Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
-            } else {
-                XGui.InfoText("Total Duty Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
+                    Helper.InfoText("Current Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
+            }
+            else
+            {
+                Helper.InfoText("Total Duty Time:", $"{newestDuty.Duration.MinutesAndSeconds()}");
                 if (newestRun is not null)
-                    XGui.InfoText("Final Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
+                    Helper.InfoText("Final Run Time:", $"{newestRun.Duration.MinutesAndSeconds()}");
             }
 
-            XGui.InfoText("In Duty:", $"{_dutyManager.DutyActive}");
-            XGui.InfoText("Deaths:",  $"{newestDuty.TotalDeaths}");
-            XGui.InfoText("Wipes:",   $"{newestDuty.TotalWipes}");
-        } else {
+            Helper.InfoText("In Duty:", $"{DutyTracker.DutyManager.DutyActive}");
+            Helper.InfoText("Deaths:", $"{newestDuty.TotalDeaths}");
+            Helper.InfoText("Wipes:", $"{newestDuty.TotalWipes}");
+        }
+        else
+        {
             // This only happens if no duties have been started since the plugin loaded.
-            ImGui.Text("No duties");
+            ImGui.TextUnformatted("No duties");
         }
 
 
-        if (ImGui.Button("Open Explorer")) Service.WindowService.ToggleWindow("DutyExplorer");
+        if (ImGui.Button("Open Explorer"))
+            DutyTracker.WindowService.ToggleWindow("DutyExplorer");
 #if DEBUG
-        if (ImGui.Button("Open Debug")) Service.WindowService.ToggleWindow("Debug");
+        if (ImGui.Button("Open Debug"))
+            DutyTracker.WindowService.ToggleWindow("Debug");
 #endif
-
-        ImGui.EndTabItem();
-    }
-
-    private void DisplayOptionsTab()
-    {
-        if (!ImGui.BeginTabItem("Options"))
-            return;
-
-        var includeDutyTrackerLabel = _configuration.IncludeDutyTrackerLabel;
-        if (ImGui.Checkbox("Include [DutyTracker] label", ref includeDutyTrackerLabel))
-            _configuration.IncludeDutyTrackerLabel = includeDutyTrackerLabel;
-
-        var suppressEmptyValues = _configuration.SuppressEmptyValues;
-        if (ImGui.Checkbox("Suppress values that are zero", ref suppressEmptyValues))
-            _configuration.SuppressEmptyValues = suppressEmptyValues;
-
-        if (ImGui.Button("Save"))
-            _configuration.Save();
-
-        ImGui.EndTabItem();
     }
 
     private void DisplayInfoTab()
     {
-        if (!ImGui.BeginTabItem("Info"))
+        using var tabItem = ImRaii.TabItem("Info");
+        if (!tabItem.Success)
             return;
 
         ImGui.TextWrapped("Nothing is saved at the moment. All data is lost whenever you quit the game, so write down whatever you want to keep.");
-
-        ImGui.EndTabItem();
     }
 }

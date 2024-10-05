@@ -2,20 +2,11 @@ using DutyTracker.Enums;
 
 namespace DutyTracker.Services.PlayerCharacter;
 
-internal class CachedPartyMember
+internal class CachedPartyMember(string name, uint hp, Alliance alliance)
 {
-    public string   Name     { get; }
-    public uint     ObjectId { get; }
-    public uint     Hp       { get; set; }
-    public Alliance Alliance { get; }
+    public readonly string Name = name;
+    public uint Hp = hp;
+    public readonly Alliance Alliance = alliance;
 
-    public CachedPartyMember(string name, uint objectId, uint hp, Alliance alliance)
-    {
-        Name     = name;
-        ObjectId = objectId;
-        Hp       = hp;
-        Alliance = alliance;
-    }
-
-    public override string ToString() => $"Name: {Name}, ObjectId: {ObjectId}, HP: {Hp}, Alliance: {Alliance}";
+    public override string ToString() => $"Name: {Name}, HP: {Hp}, Alliance: {Alliance}";
 }

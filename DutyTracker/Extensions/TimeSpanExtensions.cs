@@ -20,7 +20,8 @@ internal static class TimeSpanExtensions
     public static string HoursMinutesAndSeconds(this TimeSpan timeSpan)
     {
         var stringBuilder = new StringBuilder();
-        if (timeSpan.TotalHours > 1) {
+        if (timeSpan.TotalHours > 1)
+        {
             stringBuilder.Append(Math.Floor(timeSpan.TotalHours));
             stringBuilder.Append(':');
         }

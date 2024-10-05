@@ -1,107 +1,105 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Plugin.Services;
 using DutyTracker.Enums;
+using DutyTracker.Extensions;
 using DutyTracker.Services.DutyEvent;
+using DutyTracker.Windows;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
-using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using ImGuiNET;
-using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Services.PlayerCharacter;
 
 public sealed unsafe class PlayerCharacterState : IDisposable
 {
-    private readonly IFramework           _framework;
-    private readonly DutyEventService     _dutyEventService;
-    private readonly CachedPartyMember?[] _partyCache;
-    private readonly CachedPartyMember?[] _allianceCache;
+    private readonly CachedPartyMember?[] PartyCache;
+    private readonly CachedPartyMember?[] AllianceCache;
 
-    private AllianceState _allianceState;
-    private PartyState    _partyState;
+    private AllianceState AllianceState;
+    private PartyState PartyState;
 
-    private AllianceType _allianceType;
-    private Alliance     _partyAlliance;
-    private Alliance     _alliance1;
-    private Alliance     _alliance2;
-    private Alliance     _alliance3;
-    private Alliance     _alliance4;
-    private Alliance     _alliance5;
+    private AllianceType AllianceType;
+    private Alliance PartyAlliance;
+    private Alliance Alliance1;
+    private Alliance Alliance2;
+    private Alliance Alliance3;
+    private Alliance Alliance4;
+    private Alliance Alliance5;
 
     // These are all magic numbers that correspond to memory locations in the game.
     private const int AllianceStringPosition = 64;
-    private const int Party1Position         = 0;
-    private const int Party2Position         = 9;
-    private const int Party3Position         = 18;
-    private const int Party4Position         = 27;
-    private const int Party5Position         = 36;
-    private const int AllianceSize           = 40;
-    private const int PartySize              = 8;
+    private const int Party1Position = 0;
+    private const int Party2Position = 9;
+    private const int Party3Position = 18;
+    private const int Party4Position = 27;
+    private const int Party5Position = 36;
 
     public event EventHandler<PlayerDeathEventArgs>? OnPlayerDeath;
 
     public PlayerCharacterState()
     {
-        _framework        = Service.Framework;
-        _dutyEventService = Service.DutyEventService;
+        AllianceState = AllianceState.NoGroup;
+        PartyCache = new CachedPartyMember?[8];
+        AllianceCache = new CachedPartyMember?[40];
 
-        _allianceState = AllianceState.NoGroup;
-        _partyCache    = new CachedPartyMember?[PartySize];
-        _allianceCache = new CachedPartyMember?[AllianceSize];
-
-        _framework.Update             += FrameworkUpdate;
-        _dutyEventService.DutyStarted += DutyStarted;
-        _dutyEventService.DutyEnded   += DutyEnded;
-        Service.PluginLog.Debug("PlayerCharacterState initialized.");
+        DutyTracker.Framework.Update += FrameworkUpdate;
+        DutyTracker.DutyEventService.OnDutyStartedEvent += DutyStarted;
+        DutyTracker.DutyEventService.OnDutyEndedEvent += DutyEnded;
+        DutyTracker.Log.Debug("PlayerCharacterState initialized.");
     }
 
     public void Dispose()
     {
-        _framework.Update             -= FrameworkUpdate;
-        _dutyEventService.DutyStarted -= DutyStarted;
-        _dutyEventService.DutyEnded   -= DutyEnded;
+        DutyTracker.Framework.Update -= FrameworkUpdate;
+        DutyTracker.DutyEventService.OnDutyStartedEvent -= DutyStarted;
+        DutyTracker.DutyEventService.OnDutyEndedEvent -= DutyEnded;
     }
 
     private void FrameworkUpdate(IFramework framework)
     {
         var groupManager = GroupManager.Instance();
 
-        switch (_allianceState) {
+        switch (AllianceState)
+        {
             case AllianceState.WaitingForData:
                 // Need the alliance string array to be populated to determine which parties are which alliance,
                 // but it is not populated until the game is ready to draw the alliance list.
-                if (IsAllianceStringDataPopulated()) {
+                if (IsAllianceStringDataPopulated())
+                {
                     SetAlliances(groupManager);
-                    _allianceState = AllianceState.Running;
-                    _partyState    = PartyState.Running;
-                    Service.PluginLog.Debug("Alliance data detected. Changing state to Running.");
+                    AllianceState = AllianceState.Running;
+                    PartyState = PartyState.Running;
+                    DutyTracker.Log.Debug("Alliance data detected. Changing state to Running.");
                 }
 
                 break;
             case AllianceState.Running:
-                UpdateCache(_allianceCache, groupManager->GetAllianceMemberByIndex, index =>
+                UpdateCache(AllianceCache, groupManager->MainGroup.GetAllianceMemberByIndex, index =>
                 {
-                    switch (_allianceType) {
+                    switch (AllianceType)
+                    {
                         case AllianceType.None:
-                            Service.PluginLog.Debug("  No alliance.");
+                            DutyTracker.Log.Debug("  No alliance.");
                             return Alliance.None;
                         case AllianceType.ThreeParty:
-                            Service.PluginLog.Debug($"  Index = {index}, Alliance = {index / 8}");
+                            DutyTracker.Log.Debug($"  Index = {index}, Alliance = {index / 8}");
                             return (index / 8) switch
                             {
-                                0 => _alliance1,
-                                1 => _alliance2,
+                                0 => Alliance1,
+                                1 => Alliance2,
                                 _ => Alliance.None,
                             };
                         case AllianceType.SixParty:
-                            Service.PluginLog.Debug($"  Index = {index}, Alliance = {index / 4}");
+                            DutyTracker.Log.Debug($"  Index = {index}, Alliance = {index / 4}");
                             return (index / 4) switch
                             {
-                                0 => _alliance1,
-                                1 => _alliance2,
-                                2 => _alliance3,
-                                3 => _alliance4,
-                                4 => _alliance5,
+                                0 => Alliance1,
+                                1 => Alliance2,
+                                2 => Alliance3,
+                                3 => Alliance4,
+                                4 => Alliance5,
                                 _ => Alliance.None,
                             };
                         default:
@@ -111,164 +109,168 @@ public sealed unsafe class PlayerCharacterState : IDisposable
                 break;
         }
 
-        if (_partyState == PartyState.Running)
-            UpdateCache(_partyCache, groupManager->GetPartyMemberByIndex, _ => _partyAlliance);
+        if (PartyState == PartyState.Running)
+            UpdateCache(PartyCache, groupManager->MainGroup.GetPartyMemberByIndex, _ => PartyAlliance);
     }
 
     private void DutyStarted(object? sender, DutyStartedEventArgs eventArgs)
     {
-        if (eventArgs.IntendedUse.HasAlliance()) {
-            _allianceState = AllianceState.WaitingForData;
-            _partyState    = PartyState.WaitingForAlliance;
-        } else {
-            _partyState = PartyState.Running;
+        if (eventArgs.IntendedUse.HasAlliance())
+        {
+            AllianceState = AllianceState.WaitingForData;
+            PartyState = PartyState.WaitingForAlliance;
+        }
+        else
+        {
+            PartyState = PartyState.Running;
         }
     }
 
     private void DutyEnded(object? sender, DutyEndedEventArgs eventArgs)
     {
-        _allianceState = AllianceState.NoGroup;
-        _partyState    = PartyState.NoGroup;
+        AllianceState = AllianceState.NoGroup;
+        PartyState = PartyState.NoGroup;
         ResetAllianceInfo();
         ResetPartyInfo();
     }
 
     private static bool IsAllianceStringDataPopulated()
     {
-        var stringArray =
-            Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
-                ->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
+        var stringArray = RaptureAtkModule.Instance()->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
 
         return !string.IsNullOrWhiteSpace(Marshal.PtrToStringUTF8(new nint(stringArray[0])));
     }
 
     private void SetAlliances(GroupManager* groupManager)
     {
-        var stringArray =
-            Framework.Instance()->GetUiModule()->GetRaptureAtkModule()
-                ->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
-        Service.PluginLog.Debug("Party Strings");
-        Service.PluginLog.Debug($"  string{Party1Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party1Position]))}");
-        Service.PluginLog.Debug($"  string{Party2Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party2Position]))}");
-        Service.PluginLog.Debug($"  string{Party3Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party3Position]))}");
-        Service.PluginLog.Debug($"  string{Party4Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party4Position]))}");
-        Service.PluginLog.Debug($"  string{Party5Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party5Position]))}");
+        var stringArray = RaptureAtkModule.Instance()->AtkModule.AtkArrayDataHolder.StringArrays[AllianceStringPosition]->StringArray;
+        DutyTracker.Log.Debug("Party Strings");
+        DutyTracker.Log.Debug($"  string{Party1Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party1Position]))}");
+        DutyTracker.Log.Debug($"  string{Party2Position}:  {Marshal.PtrToStringUTF8(new nint(stringArray[Party2Position]))}");
+        DutyTracker.Log.Debug($"  string{Party3Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party3Position]))}");
+        DutyTracker.Log.Debug($"  string{Party4Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party4Position]))}");
+        DutyTracker.Log.Debug($"  string{Party5Position}: {Marshal.PtrToStringUTF8(new nint(stringArray[Party5Position]))}");
 
-        _alliance1 = AllianceExtensions.ToAlliance(stringArray[Party1Position]);
-        _alliance2 = AllianceExtensions.ToAlliance(stringArray[Party2Position]);
-        _alliance3 = AllianceExtensions.ToAlliance(stringArray[Party3Position]);
-        _alliance4 = AllianceExtensions.ToAlliance(stringArray[Party4Position]);
-        _alliance5 = AllianceExtensions.ToAlliance(stringArray[Party5Position]);
+        Alliance1 = AllianceExtensions.ToAlliance(stringArray[Party1Position]);
+        Alliance2 = AllianceExtensions.ToAlliance(stringArray[Party2Position]);
+        Alliance3 = AllianceExtensions.ToAlliance(stringArray[Party3Position]);
+        Alliance4 = AllianceExtensions.ToAlliance(stringArray[Party4Position]);
+        Alliance5 = AllianceExtensions.ToAlliance(stringArray[Party5Position]);
 
-        _allianceType = (AllianceType)groupManager->AllianceFlags;
-
-        _partyAlliance = _allianceType switch
+        AllianceType = (AllianceType)groupManager->MainGroup.AllianceFlags;
+        PartyAlliance = AllianceType switch
         {
-            AllianceType.ThreeParty => (alliance1: _alliance1, alliance2: _alliance2) switch
+            AllianceType.ThreeParty => (alliance1: Alliance1, alliance2: Alliance2) switch
             {
                 (Alliance.A, Alliance.B) => Alliance.C,
                 (Alliance.A, Alliance.C) => Alliance.B,
                 (Alliance.B, Alliance.C) => Alliance.A,
-                (_, _)                   => Alliance.None,
+                (_, _) => Alliance.None,
             },
-            AllianceType.SixParty => (alliance1: _alliance1, alliance2: _alliance2, alliance3: _alliance3, alliance4: _alliance4, alliance5: _alliance5) switch
-            {
-                (Alliance.A, Alliance.B, Alliance.C, Alliance.D, Alliance.E) => Alliance.F,
-                (Alliance.A, Alliance.B, Alliance.C, Alliance.D, Alliance.F) => Alliance.E,
-                (Alliance.A, Alliance.B, Alliance.C, Alliance.E, Alliance.F) => Alliance.D,
-                (Alliance.A, Alliance.B, Alliance.D, Alliance.E, Alliance.F) => Alliance.C,
-                (Alliance.A, Alliance.C, Alliance.D, Alliance.E, Alliance.F) => Alliance.B,
-                (Alliance.B, Alliance.C, Alliance.D, Alliance.E, Alliance.F) => Alliance.A,
-                (_, _, _, _, _)                                              => Alliance.None,
-            },
+            AllianceType.SixParty => (alliance1: Alliance1, alliance2: Alliance2, alliance3: Alliance3, alliance4: Alliance4, alliance5: Alliance5) switch
+                {
+                    (Alliance.A, Alliance.B, Alliance.C, Alliance.D, Alliance.E) => Alliance.F,
+                    (Alliance.A, Alliance.B, Alliance.C, Alliance.D, Alliance.F) => Alliance.E,
+                    (Alliance.A, Alliance.B, Alliance.C, Alliance.E, Alliance.F) => Alliance.D,
+                    (Alliance.A, Alliance.B, Alliance.D, Alliance.E, Alliance.F) => Alliance.C,
+                    (Alliance.A, Alliance.C, Alliance.D, Alliance.E, Alliance.F) => Alliance.B,
+                    (Alliance.B, Alliance.C, Alliance.D, Alliance.E, Alliance.F) => Alliance.A,
+                    (_, _, _, _, _) => Alliance.None,
+                },
             _ => Alliance.None,
         };
 
-        Service.PluginLog.Verbose($"Alliance Type: {_allianceType}");
-        Service.PluginLog.Verbose($"Party Alliance: {_partyAlliance}");
-        Service.PluginLog.Verbose($"Alliance Parties: {_alliance1}, {_alliance2}, {_alliance3}, {_alliance4}, {_alliance5}");
+        DutyTracker.Log.Verbose($"Alliance Type: {AllianceType}");
+        DutyTracker.Log.Verbose($"Party Alliance: {PartyAlliance}");
+        DutyTracker.Log.Verbose($"Alliance Parties: {Alliance1}, {Alliance2}, {Alliance3}, {Alliance4}, {Alliance5}");
     }
 
     private void ResetAllianceInfo()
     {
-        for (var i = 0; i < _allianceCache.Length; i++) {
-            _allianceCache[i] = null;
-        }
+        for (var i = 0; i < AllianceCache.Length; i++)
+            AllianceCache[i] = null;
 
-        _alliance1 = Alliance.None;
-        _alliance2 = Alliance.None;
-        _alliance3 = Alliance.None;
-        _alliance4 = Alliance.None;
-        _alliance5 = Alliance.None;
+        Alliance1 = Alliance.None;
+        Alliance2 = Alliance.None;
+        Alliance3 = Alliance.None;
+        Alliance4 = Alliance.None;
+        Alliance5 = Alliance.None;
     }
 
     private void ResetPartyInfo()
     {
-        for (var i = 0; i < _partyCache.Length; i++) {
-            _partyCache[i] = null;
-        }
+        for (var i = 0; i < PartyCache.Length; i++)
+            PartyCache[i] = null;
 
-        _partyAlliance = Alliance.None;
+        PartyAlliance = Alliance.None;
     }
 
 
-    // This is a bit messy, but passing in the array and access functions lets me keep the actual logic the exact same 
+    // This is a bit messy, but passing in the array and access functions lets me keep the actual logic the exact same
     // between party and alliance members, while still tracking them separately. It was especially difficult to work
     // with when doing it separately due to code duplication with slight differences.
     private delegate PartyMember* GetPartyMember(int index);
-
     private delegate Alliance GetAlliance(int index);
 
     private void UpdateCache(CachedPartyMember?[] cache, GetPartyMember getMember, GetAlliance getAlliance)
     {
-        for (var i = 0; i < cache.Length; i++) {
-            var partyMember  = getMember(i);
+        for (var i = 0; i < cache.Length; i++)
+        {
+            var partyMember = getMember(i);
             var playerExists = IsPlayerInitialized(partyMember);
 
-            if (cache[i] is not null) {
+            if (cache[i] is not null)
+            {
                 // Have to check if the player exists first, because the health check will be true if they don't.
                 // This would result in player being marked dead instead of leaving.
-                if (!playerExists) {
+                if (!playerExists)
+                {
                     PlayerLeft(i);
-                } else {
-                    if (cache[i]!.Hp != partyMember->CurrentHP) {
+                }
+                else
+                {
+                    if (cache[i]!.Hp != partyMember->CurrentHP)
+                    {
                         cache[i]!.Hp = partyMember->CurrentHP;
-
-                        if (cache[i]!.Hp == 0) PlayerDied(i);
+                        if (cache[i]!.Hp == 0)
+                            PlayerDied(i);
                     }
                 }
-            } else {
+            }
+            else
+            {
                 if (playerExists) AddPlayer(partyMember, getAlliance(i), i);
             }
         }
 
+        return;
+
         void PlayerLeft(int i)
         {
-            Service.PluginLog.Debug($"Player left: {i}, {cache[i]!.Name}, {cache[i]!.ObjectId}");
+            DutyTracker.Log.Debug($"Player left: {i}, {cache[i]!.Name}");
             cache[i] = null;
         }
 
         void PlayerDied(int i)
         {
             var playerName = cache[i]!.Name;
-            var objectId   = cache[i]!.ObjectId;
-            var alliance   = cache[i]!.Alliance;
+            var alliance = cache[i]!.Alliance;
 
-            Service.PluginLog.Debug($"Played died: {i}, {playerName}, {objectId}, {alliance}");
-            OnPlayerDeath?.Invoke(this, new PlayerDeathEventArgs(playerName, objectId, alliance));
+            DutyTracker.Log.Debug($"Played died: {i}, {playerName}, {alliance}");
+            OnPlayerDeath?.Invoke(this, new PlayerDeathEventArgs(playerName, alliance));
         }
 
         void AddPlayer(PartyMember* partyMember, Alliance alliance, int i)
         {
-            var newPlayer = new CachedPartyMember(GetPlayerName(partyMember), partyMember->ObjectID, partyMember->CurrentHP, alliance);
-            Service.PluginLog.Debug($"Detected new player: {i}, {newPlayer}");
+            var newPlayer = new CachedPartyMember(GetPlayerName(partyMember), partyMember->CurrentHP, alliance);
+            DutyTracker.Log.Debug($"Detected new player: {i}, {newPlayer}");
             cache[i] = newPlayer;
         }
     }
 
     private static GroupManager* GetSecondGroupManager(GroupManager* firstGroupManager) => firstGroupManager + 1;
 
-    private static string GetPlayerName(PartyMember* partyMember) => Marshal.PtrToStringUTF8(new nint(partyMember->Name)) ?? string.Empty;
+    private static string GetPlayerName(PartyMember* partyMember) => partyMember->NameString ?? string.Empty;
 
     /// <summary>
     ///     <see cref="GroupManager.GetPartyMemberByIndex" /> returns only a pointer. SE pointers can be null, or 0xE0000000
@@ -282,168 +284,164 @@ public sealed unsafe class PlayerCharacterState : IDisposable
 
         if (partyMember is null)
             return false;
-        if (partyMember->ObjectID == seUninitializedPointer)
+        if (partyMember->EntityId == seUninitializedPointer)
             return false;
 
         return true;
     }
 
-#region DebugInfo
+    #region DebugInfo
 
     public static void DebugGroupManager()
     {
         var groupManager1 = GroupManager.Instance();
         var groupManager2 = GetSecondGroupManager(groupManager1);
-        var index         = 1;
+        var index = 1;
 
-        if (groupManager1 is null) {
-            ImGui.Text("No Group Manager Available.");
+        if (groupManager1 is null)
+        {
+            ImGui.TextUnformatted("No Group Manager Available.");
             return;
         }
 
-        ImGui.Text("== GroupManager 1 ==");
+        ImGui.TextUnformatted("== GroupManager 1 ==");
         ImGuiGroupManager(groupManager1);
         ImGuiParty(groupManager1);
         ImGuiAlliance(groupManager1);
         index++;
-        ImGui.Text("== GroupManager 2 ==");
+        ImGui.TextUnformatted("== GroupManager 2 ==");
         ImGuiGroupManager(groupManager2);
         ImGuiParty(groupManager2);
         ImGuiAlliance(groupManager2);
 
+        return;
 
         void ImGuiGroupManager(GroupManager* groupManager)
         {
-            ImGui.Text($"Alliance Flags: {groupManager->AllianceFlags}");
-            ImGui.Text($"MemberCount: {groupManager->MemberCount}");
-            ImGui.Text($"PartyId: {groupManager->PartyId}");
-            ImGui.Text($"PartyId_2: {groupManager->PartyId_2}");
-            ImGui.Text($"PartyLeaderIndex: {groupManager->PartyLeaderIndex}");
-            ImGui.Text($"Unk_3D40: {groupManager->Unk_3D40}");
-            ImGui.Text($"Unk_3D44: {groupManager->Unk_3D44}");
-            ImGui.Text($"Unk_3D5D: {groupManager->Unk_3D5D}");
-            ImGui.Text($"Unk_3D5F: {groupManager->Unk_3D5F}");
-            ImGui.Text($"Unk_3D60: {groupManager->Unk_3D60}");
+            ImGui.TextUnformatted($"Alliance Flags: {groupManager->MainGroup.AllianceFlags}");
+            ImGui.TextUnformatted($"MemberCount: {groupManager->MainGroup.MemberCount}");
+            ImGui.TextUnformatted($"PartyId: {groupManager->MainGroup.PartyId}");
+            ImGui.TextUnformatted($"PartyId_2: {groupManager->MainGroup.PartyId_2}");
+            ImGui.TextUnformatted($"PartyLeaderIndex: {groupManager->MainGroup.PartyLeaderIndex}");
         }
 
         void ImGuiParty(GroupManager* groupManager)
         {
-            if (groupManager->MemberCount == 0) {
-                ImGui.Text(" - No Party - ");
+            if (groupManager->MainGroup.MemberCount == 0)
+            {
+                ImGui.TextUnformatted(" - No Party - ");
                 return;
             }
 
-            ImGui.Text("Party Members:");
-            if (ImGui.BeginTable($"Party#{index}", 5)) {
-                XGui.TableHeader("Index", "Name", "ObjectID", "CurrentHP", "ClassJob");
+            ImGui.TextUnformatted("Party Members:");
+            using var table = ImRaii.Table($"Party#{index}", 4);
+            if (!table.Success)
+                return;
 
-                for (var i = 0; i < 8; i++) {
-                    var partyMember = groupManager->GetPartyMemberByIndex(i);
-                    if (IsPlayerInitialized(partyMember))
-                        DebugPartyMemberRow(partyMember, i);
-                    else
-                        EmptyPlayerRow(i);
-                }
+            Helper.TableHeader("Index", "Name", "CurrentHP", "ClassJob");
+            for (var i = 0; i < 8; i++)
+            {
+                var partyMember = groupManager->MainGroup.GetPartyMemberByIndex(i);
+                if (IsPlayerInitialized(partyMember))
+                    DebugPartyMemberRow(partyMember, i);
+                else
+                    EmptyPlayerRow(i);
             }
-
-            ImGui.EndTable();
         }
 
         void ImGuiAlliance(GroupManager* groupManager)
         {
-            if (groupManager->AllianceFlags == 0x00) {
-                ImGui.Text(" - No Alliance - ");
+            if (groupManager->MainGroup.AllianceFlags == 0x00)
+            {
+                ImGui.TextUnformatted(" - No Alliance - ");
                 return;
             }
 
-            ImGui.Text("Alliance Members:");
-            if (ImGui.BeginTable($"Alliance#{index}", 5)) {
-                XGui.TableHeader("Index", "Name", "ObjectID", "CurrentHP", "ClassJob");
-                for (var i = 0; i < 20; i++) {
-                    var allianceMember = groupManager->GetAllianceMemberByIndex(i);
-                    if (IsPlayerInitialized(allianceMember))
-                        try {
-                            DebugPartyMemberRow(allianceMember, i);
-                        } catch (Exception ex) {
-                            Service.PluginLog.Error($"{ex}");
-                            XGui.TableRow($"{i}",
-                                          "error",
-                                          "error",
-                                          "error",
-                                          "error");
-                        }
-                    else
-                        XGui.TableRow($"{i}",
-                                      "-",
-                                      "-",
-                                      "-",
-                                      "-");
+            ImGui.TextUnformatted("Alliance Members:");
+            using var table = ImRaii.Table($"Alliance#{index}", 4);
+            if (!table.Success)
+                return;
+
+            Helper.TableHeader("Index", "Name", "CurrentHP", "ClassJob");
+            for (var i = 0; i < 20; i++)
+            {
+                var allianceMember = groupManager->MainGroup.GetAllianceMemberByIndex(i);
+                if (IsPlayerInitialized(allianceMember))
+                {
+                    try
+                    {
+                        DebugPartyMemberRow(allianceMember, i);
+                    }
+                    catch (Exception ex)
+                    {
+                        DutyTracker.Log.Error(ex, "Error occured.");
+                        Helper.TableRow($"{i}", "error", "error", "error");
+                    }
+                }
+                else
+                {
+                    Helper.TableRow($"{i}", "-", "-", "-");
                 }
             }
-
-            ImGui.EndTable();
         }
     }
 
     private static void DebugPartyMemberRow(PartyMember* partyMember, int i)
     {
-        XGui.TableRow($"{i}",
-                      $"{Marshal.PtrToStringUTF8(new nint(partyMember->Name))}",
-                      $"{partyMember->ObjectID}",
-                      $"{partyMember->CurrentHP}",
-                      $"{partyMember->ClassJob}");
+        Helper.TableRow($"{i}", $"{partyMember->NameString}", $"{partyMember->CurrentHP}", $"{partyMember->ClassJob}");
+    }
+
+    private static void EmptyPlayerRow(int i)
+    {
+        Helper.TableRow($"{i}", "-", "-", "-");
     }
 
     public void DebugCache()
     {
-        ImGui.Text($"Party Alliance = {_partyAlliance}");
-        ImGui.Text($"Alliance1 = {_alliance1}");
-        ImGui.Text($"Alliance2 = {_alliance2}");
-        ImGui.Text($"Alliance3 = {_alliance3}");
-        ImGui.Text($"Alliance4 = {_alliance4}");
-        ImGui.Text($"Alliance5 = {_alliance5}");
+        ImGui.TextUnformatted($"Party Alliance = {PartyAlliance}");
+        ImGui.TextUnformatted($"Alliance1 = {Alliance1}");
+        ImGui.TextUnformatted($"Alliance2 = {Alliance2}");
+        ImGui.TextUnformatted($"Alliance3 = {Alliance3}");
+        ImGui.TextUnformatted($"Alliance4 = {Alliance4}");
+        ImGui.TextUnformatted($"Alliance5 = {Alliance5}");
 
-        ImGui.Text($"Party State = {_partyState}");
-        ImGui.Text($"Alliance State = {_allianceState}");
+        ImGui.TextUnformatted($"Party State = {PartyState}");
+        ImGui.TextUnformatted($"Alliance State = {AllianceState}");
 
-        ImGui.Text("Party Cache");
-        if (ImGui.BeginTable("PartyCache", 5)) {
-            XGui.TableHeader("", "Name", "ObjectID", "HP", "Alliance");
-            for (var i = 0; i < _partyCache.Length; i++) {
-                var cachedMember = _partyCache[i];
-                if (cachedMember is not null)
-                    XGui.TableRow($"{i}",
-                                  $"{cachedMember.Name}",
-                                  $"{cachedMember.ObjectId}",
-                                  $"{cachedMember.Hp}",
-                                  $"{cachedMember.Alliance}");
-                else
-                    EmptyPlayerRow(i);
+        ImGui.TextUnformatted("Party Cache");
+        using var table = ImRaii.Table("PartyCache", 4);
+        {
+            if (table.Success)
+            {
+                Helper.TableHeader("", "Name", "HP", "Alliance");
+                for (var i = 0; i < PartyCache.Length; i++)
+                {
+                    var cachedMember = PartyCache[i];
+                    if (cachedMember is not null)
+                        Helper.TableRow($"{i}", $"{cachedMember.Name}", $"{cachedMember.Hp}", $"{cachedMember.Alliance}");
+                    else
+                        EmptyPlayerRow(i);
+                }
             }
         }
 
-        ImGui.EndTable();
-
-        ImGui.Text("Alliance Cache");
-        if (ImGui.BeginTable("AllianceCache", 5)) {
-            XGui.TableHeader("", "Name", "ObjectID", "HP", "Alliance");
-            for (var i = 0; i < _allianceCache.Length; i++) {
-                var cachedMember = _allianceCache[i];
-                if (cachedMember is not null)
-                    XGui.TableRow($"{i}",
-                                  $"{cachedMember.Name}",
-                                  $"{cachedMember.ObjectId}",
-                                  $"{cachedMember.Hp}",
-                                  $"{cachedMember.Alliance}");
-                else
-                    EmptyPlayerRow(i);
+        ImGui.TextUnformatted("Alliance Cache");
+        using var lowerTable = ImRaii.Table("AllianceCache", 4);
+        {
+            if (lowerTable.Success)
+            {
+                Helper.TableHeader("", "Name", "HP", "Alliance");
+                for (var i = 0; i < AllianceCache.Length; i++)
+                {
+                    var cachedMember = AllianceCache[i];
+                    if (cachedMember is not null)
+                        Helper.TableRow($"{i}", $"{cachedMember.Name}", $"{cachedMember.Hp}", $"{cachedMember.Alliance}");
+                    else
+                        EmptyPlayerRow(i);
+                }
             }
         }
-
-        ImGui.EndTable();
     }
 
-    private static void EmptyPlayerRow(int i) { XGui.TableRow($"{i}", "-", "-", "-", "-"); }
-
-#endregion
+    #endregion
 }

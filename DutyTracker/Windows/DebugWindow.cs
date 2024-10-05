@@ -1,90 +1,68 @@
 ﻿using System;
+using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin.Services;
 using DutyTracker.Extensions;
 using DutyTracker.Services.PlayerCharacter;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
-using XpahtaLib.DalamudUtilities.Extensions;
-using XpahtaLib.DalamudUtilities.UsefulEnums;
 
 namespace DutyTracker.Windows;
 
 public class DebugWindow : Window, IDisposable
 {
-    private readonly IClientState         _clientState;
-    private readonly IDataManager         _dataManager;
-    private readonly PlayerCharacterState _playerCharacterState;
-
-    public DebugWindow()
-        : base("Debug")
-    {
-        _clientState          = Service.ClientState;
-        _dataManager          = Service.DataManager;
-        _playerCharacterState = Service.PlayerCharacterState;
-    }
+    public DebugWindow() : base("Debug") { }
 
     public void Dispose() { }
 
     public override void Draw()
     {
-        if (ImGui.BeginTabBar("DebugTabBar")) {
-            DisplayFfxivDebug();
-            DisplayPlayerCharacterStateDebug();
-            DisplayTerritoryInfo();
-        }
+        using var tabBar = ImRaii.TabBar("DebugTabBar");
+        if (!tabBar.Success)
+            return;
 
-        ImGui.EndTabBar();
+        DisplayFfxivDebug();
+        DisplayPlayerCharacterStateDebug();
+        DisplayTerritoryInfo();
     }
 
     private void DisplayFfxivDebug()
     {
-        if (!ImGui.BeginTabItem("GroupManager"))
+        using var tabItem = ImRaii.TabItem("GroupManager");
+        if (!tabItem.Success)
             return;
 
         PlayerCharacterState.DebugGroupManager();
-
-        ImGui.EndTabItem();
     }
 
     private void DisplayPlayerCharacterStateDebug()
     {
-        if (!ImGui.BeginTabItem("PlayerCharacterState"))
+        using var tabItem = ImRaii.TabItem("PlayerCharacterState");
+        if (!tabItem.Success)
             return;
 
-        _playerCharacterState.DebugCache();
-
-        ImGui.EndTabItem();
+        DutyTracker.PlayerCharacterState.DebugCache();
     }
 
     private void DisplayTerritoryInfo()
     {
-        if (!ImGui.BeginTabItem("ClientState"))
+        using var tabItem = ImRaii.TabItem("ClientState");
+        if (!tabItem.Success)
             return;
 
-        var territoryRow = _dataManager.Excel.GetSheet<TerritoryType>();
-        if (territoryRow is not null) {
-            var territory = territoryRow.GetRow(_clientState.TerritoryType);
-
-            if (territory is null) {
-                ImGui.Text("Null territory");
-                ImGui.EndTabItem();
-                return;
-            }
-
-            var intendedUse = territory.GetIntendedUseEnum();
-            ImGui.Text($"Territory Type: {territory}");
-            ImGui.Text($"Territory Name: {territory.PlaceName.Value?.Name} - {territory.Name}");
-            ImGui.Text($"IsPvpZone: {territory.IsPvpZone}");
-            ImGui.Text($"Intended use: {intendedUse} - {territory.TerritoryIntendedUse}");
-            ImGui.Text($"HasAlliance: {intendedUse.HasAlliance()}");
-            ImGui.Text($"IsRaidOrTrial: {intendedUse.IsRaidOrTrial()}");
-            ImGui.Text($"UsesBothGroupManagers: {intendedUse.UsesBothGroupManagers()}");
-            ImGui.Text($"ShouldTrack: {intendedUse.ShouldTrack()}");
-        } else {
-            ImGui.Text("Could not load sheet.");
+        var territory = Sheets.TerritorySheet.GetRow(DutyTracker.ClientState.TerritoryType);
+        if (territory is null)
+        {
+            ImGui.TextUnformatted("Null territory");
+            return;
         }
 
-        ImGui.EndTabItem();
+        var intendedUse = territory.GetIntendedUseEnum();
+        ImGui.TextUnformatted($"Territory Type: {territory}");
+        ImGui.TextUnformatted($"Territory Name: {territory.PlaceName.Value?.Name} - {territory.Name}");
+        ImGui.TextUnformatted($"IsPvpZone: {territory.IsPvpZone}");
+        ImGui.TextUnformatted($"Intended use: {intendedUse} - {territory.TerritoryIntendedUse}");
+        ImGui.TextUnformatted($"HasAlliance: {intendedUse.HasAlliance()}");
+        ImGui.TextUnformatted($"IsRaidOrTrial: {intendedUse.IsRaidOrTrial()}");
+        ImGui.TextUnformatted($"UsesBothGroupManagers: {intendedUse.UsesBothGroupManagers()}");
+        ImGui.TextUnformatted($"ShouldTrack: {intendedUse.ShouldTrack()}");
     }
 }
